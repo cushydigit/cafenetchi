@@ -1,0 +1,42 @@
+services:
+
+  api:
+    build: ./api
+    container_name: api
+    env_file: .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      PORT: "8080"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: cafenetchi-postgres
+    environment:
+      POSTGRES_DB: cafenetchi-db
+      POSTGRES_USER: cafenetchi-user
+      POSTGRES_PASSWORD: cafenetchi-pass
+    volumes:
+      - ./db-data/postgres:/var/lib/postgresql/data 
+    ports:
+      - "5432:5432"
+
+  nginx:
+    image: nginx:alpine
+    container_name: cafenetchi-nginx
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: cafenetchi-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: cafenet
+      MINIO_ROOT_PASSWORD: strongpass
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+

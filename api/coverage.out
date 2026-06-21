@@ -1,0 +1,20 @@
+mode: set
+cafenetchi-api/cmd/server/main.go:14.13,22.47 3 0
+cafenetchi-api/cmd/server/main.go:22.47,24.3 1 0
+cafenetchi-api/cmd/server/main.go:27.2,44.64 6 0
+cafenetchi-api/cmd/server/main.go:44.64,47.3 2 0
+cafenetchi-api/cmd/server/main.go:49.2,50.67 2 0
+cafenetchi-api/cmd/server/main.go:50.67,52.3 1 0
+cafenetchi-api/internal/config/config.go:28.21,42.2 2 0
+cafenetchi-api/internal/config/config.go:46.35,53.16 3 0
+cafenetchi-api/internal/config/config.go:53.16,55.3 1 0
+cafenetchi-api/internal/config/config.go:56.2,58.11 3 0
+cafenetchi-api/internal/config/config.go:61.46,64.25 2 0
+cafenetchi-api/internal/config/config.go:64.25,68.17 2 0
+cafenetchi-api/internal/config/config.go:68.17,70.4 1 0
+cafenetchi-api/internal/config/config.go:70.9,73.4 2 0
+cafenetchi-api/internal/config/config.go:76.2,76.83 1 0
+cafenetchi-api/internal/config/config.go:80.37,88.2 1 0
+cafenetchi-api/internal/config/config.go:90.46,91.48 1 0
+cafenetchi-api/internal/config/config.go:91.48,93.3 1 0
+cafenetchi-api/internal/config/config.go:94.2,94.21 1 0
