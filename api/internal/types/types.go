@@ -6,7 +6,7 @@ type SendOTPRequest struct {
 
 type VerifyOTPRequest struct {
 	Phone string `json:"phone"`
-	OTP   string `json:"opt"`
+	Code  string `json:"code"`
 }
 
 type Response struct {

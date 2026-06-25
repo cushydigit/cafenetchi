@@ -48,7 +48,7 @@ func (h *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, token, isNewUser, err := h.svc.ValidateOTP(req.Phone, req.OTP)
+	_, token, isNewUser, err := h.svc.ValidateOTP(req.Phone, req.Code)
 	if err != nil {
 		helpers.ErrorJSON(w, errors.New("Not authenticated"), http.StatusUnauthorized)
 		return

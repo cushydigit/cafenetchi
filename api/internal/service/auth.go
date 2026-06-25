@@ -11,17 +11,18 @@ import (
 
 // Auth or AuthService
 type Auth struct {
-	userRepo   repository.UserRepository
-	otpSvc     OTP
-	smsService SMS
-	jwtSecret  string
+	userRepo  repository.UserRepository
+	otpSvc    OTP
+	smsSvc    SMS
+	jwtSecret string
 }
 
 func NewAuth(userRep repository.UserRepository, otpSvc OTP, smsSvc SMS, jwtSecret string) *Auth {
 	return &Auth{
-		userRepo:   userRep,
-		smsService: smsSvc,
-		jwtSecret:  jwtSecret,
+		userRepo:  userRep,
+		otpSvc:    otpSvc,
+		smsSvc:    smsSvc,
+		jwtSecret: jwtSecret,
 	}
 
 }
@@ -35,7 +36,7 @@ func (s *Auth) SendOTP(phone string) error {
 
 	log.Printf("generate code for %s is %s", phone, otpCode)
 
-	return s.smsService.SendOTP(phone, otpCode)
+	return s.smsSvc.SendOTP(phone, otpCode)
 }
 
 func (s *Auth) ValidateOTP(phone, code string) (*model.User, string, bool, error) {
