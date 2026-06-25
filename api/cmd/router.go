@@ -2,7 +2,9 @@ package main
 
 import (
 	"cafenetchi-api/internal/config"
-	"log"
+	"cafenetchi-api/internal/handler"
+	"cafenetchi-api/internal/repository"
+	"cafenetchi-api/internal/service"
 	"net/http"
 	"time"
 
@@ -11,19 +13,8 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func main() {
-	// load configuration
-	cfg := config.Load()
-
-	// Initialize Database
-	db := config.InitDB(cfg)
-
-	// Auto Migrate (for early developement)
-	if err := config.AutoMigrate(db); err != nil {
-		log.Printf("migration failed: %v", err)
-	}
-
-	// Initilize Router
+func Routes(cfg config.Config) chi.Router {
+	// Initialize Router
 	r := chi.NewRouter()
 
 	// Global Router
@@ -32,7 +23,7 @@ func main() {
 	// TODO: check is it working?
 	r.Use(chi_middleware.Timeout(60 * time.Second)) // is it working?
 	r.Use(cors.Handler(cors.Options{
-		// TODO: change in production
+		// TODO: change in production add domain
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
@@ -40,14 +31,23 @@ func main() {
 		MaxAge:           300,
 	}))
 
+	userRepo := repository.NewInMemoryUserRepo()
+	otpSvc := service.NewInRedisOTP()
+	smsSvc := service.NewKavenegar(cfg.KavenegarAPIKey, cfg.KavenegarSender)
+
+	s := service.NewAuth(userRepo, otpSvc, smsSvc, "secret")
+
+	h := handler.NewAuth(s)
+
+	// routes
+	r.Post("/otp", h.SendOTP)
+	r.Post("/verify", h.VerifyOTP)
+
 	// Health Check
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("cafenetchi api server up and healthy"))
 	})
 
-	log.Printf("server is up and listen at %s", cfg.ServerPort)
-	if err := http.ListenAndServe(":"+cfg.ServerPort, r); err != nil {
-		log.Fatalf("failed to listen or serve ... %v", err)
-	}
+	return r
 }

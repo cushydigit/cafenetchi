@@ -6,7 +6,7 @@ COPY . .
 RUN go mod download
 
 # BUILD the application
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/api ./cmd/server/
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/api ./cmd
 
 FROM alpine:latest
 

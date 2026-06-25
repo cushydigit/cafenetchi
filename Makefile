@@ -3,7 +3,7 @@
 # ===============================================
 build:
 	@echo "building cafenetchi-api server..."
-	@cd ./api && go build -o ./bin/cafenetchi-api ./cmd/server
+	@cd ./api && go build -o ./bin/cafenetchi-api ./cmd
 
 run: build
 	@echo "running cafenetchi-api server..."
@@ -25,6 +25,8 @@ docker-up:
 
 docker-down:
 	docker compose down
+
+docker-reset: docker-down docker-up
 
 docker-logs:
 	docker compose logs -f
