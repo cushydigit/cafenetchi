@@ -13,6 +13,13 @@ import (
 	"github.com/go-chi/cors"
 )
 
+// Routes initializes and configures a chi router with the given configuration.
+//
+// Parameters:
+// - cfg: The configuration for the router.
+//
+// Returns:
+// - r: The configured chi router.
 func Routes(cfg config.Config) chi.Router {
 	// Initialize Router
 	r := chi.NewRouter()

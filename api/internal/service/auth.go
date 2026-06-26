@@ -4,6 +4,7 @@ import (
 	"cafenetchi-api/internal/model"
 	"cafenetchi-api/internal/repository"
 	"cafenetchi-api/internal/utils"
+	"context"
 	"errors"
 	"log"
 	"time"
@@ -27,9 +28,9 @@ func NewAuth(userRep repository.UserRepository, otpSvc OTP, smsSvc SMS, jwtSecre
 
 }
 
-func (s *Auth) SendOTP(phone string) error {
+func (s *Auth) SendOTP(ctx context.Context, phone string) error {
 	// TODO: Business rule: Maybe check rate limiting here later
-	otpCode, err := s.otpSvc.GenerateOTP(phone)
+	otpCode, err := s.otpSvc.GenerateOTP(ctx, phone)
 	if err != nil {
 		return err
 	}
@@ -39,9 +40,9 @@ func (s *Auth) SendOTP(phone string) error {
 	return s.smsSvc.SendOTP(phone, otpCode)
 }
 
-func (s *Auth) ValidateOTP(phone, code string) (*model.User, string, bool, error) {
+func (s *Auth) ValidateOTP(ctx context.Context, phone, code string) (*model.User, string, bool, error) {
 	// verify OTP
-	if !s.otpSvc.ValidateOTP(phone, code) {
+	if !s.otpSvc.ValidateOTP(ctx, phone, code) {
 		return nil, "", false, errors.New("Invalid otp code: " + code)
 	}
 	// TODO: Find or Create User

@@ -8,8 +8,8 @@ import (
 )
 
 type OTP interface {
-	GenerateOTP(phone string) (string, error)
-	ValidateOTP(phone, otp string) bool
+	GenerateOTP(ctx context.Context, phone string) (string, error)
+	ValidateOTP(ctx context.Context, phone, otp string) bool
 }
 
 type InRedisOTP struct{}
@@ -18,21 +18,22 @@ func NewInRedisOTP() *InRedisOTP {
 	return &InRedisOTP{}
 }
 
-func (s *InRedisOTP) GenerateOTP(phone string) (string, error) {
+func (s *InRedisOTP) GenerateOTP(ctx context.Context, phone string) (string, error) {
 	otp := fmt.Sprintf("%06d", rand.Intn(1000000))
-	if err := redis.SetOTP(context.Background(), phone, otp); err != nil {
+	if err := redis.SetOTP(ctx, phone, otp); err != nil {
 		return "", err
 	}
 
 	return otp, nil
 }
 
-func (s *InRedisOTP) ValidateOTP(phone, otp string) bool {
-	storedOTP, err := redis.GetOTP(context.Background(), phone)
+func (s *InRedisOTP) ValidateOTP(ctx context.Context, phone, otp string) bool {
+	storedOTP, err := redis.GetOTP(ctx, phone)
 	if err != nil {
 		return false
 	}
 	if storedOTP == otp {
+		redis.DeleteOTP(ctx, phone)
 		return true
 	}
 	return false

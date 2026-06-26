@@ -21,3 +21,7 @@ func SetOTP(ctx context.Context, phone, otp string) error {
 func GetOTP(ctx context.Context, phone string) (string, error) {
 	return client.Get(ctx, otpKey(phone)).Result()
 }
+
+func DeleteOTP(ctx context.Context, phone string) error {
+	return client.Del(ctx, otpKey(phone)).Err()
+}

@@ -7,18 +7,25 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 )
 
 func main() {
-	// global context
-	ctx := context.Background()
 	// load configuration
 	cfg := config.Load()
 	// Initialize Database
 	db := config.InitDB(cfg)
 
 	// Initialize Cache (Redis)
-	redis.Init(ctx, fmt.Sprintf("%s:%s", cfg.RdsHost, cfg.RdsPort), cfg.RdsPass, 0)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	redis.Init(
+		ctx,
+		fmt.Sprintf("%s:%s", cfg.RdsHost, cfg.RdsPort),
+		cfg.RdsPass, 0,
+	)
 	defer redis.Close()
 
 	// Auto Migrate (for early development)
@@ -31,9 +38,24 @@ func main() {
 		Handler: Routes(*cfg),
 	}
 
-	log.Printf("server is up and listen at %s", cfg.ServerPort)
+	go func() {
+		log.Printf("server is up and listening at %s", cfg.ServerPort)
+		if err := srv.ListenAndServe(); err != nil {
+			log.Fatalf("server failed: %v", err)
+		}
+	}()
 
-	if err := srv.ListenAndServe(); err != nil {
-		log.Fatalf("failed to listen or serve ... %v", err)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+
+	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("server shutdown failed: %v", err)
 	}
+
+	log.Println("server stopped")
+
 }

@@ -28,7 +28,7 @@ func (h *Auth) SendOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: maybe require a middlewares for phone validation format
-	if err := h.svc.SendOTP(req.Phone); err != nil {
+	if err := h.svc.SendOTP(r.Context(), req.Phone); err != nil {
 		log.Println(err)
 		helpers.ErrorJSON(w, errors.New("Failed to send OTP"), http.StatusInternalServerError)
 		return
@@ -48,7 +48,7 @@ func (h *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, token, isNewUser, err := h.svc.ValidateOTP(req.Phone, req.Code)
+	_, token, isNewUser, err := h.svc.ValidateOTP(r.Context(), req.Phone, req.Code)
 	if err != nil {
 		helpers.ErrorJSON(w, errors.New("Not authenticated"), http.StatusUnauthorized)
 		return
