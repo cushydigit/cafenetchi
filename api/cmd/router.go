@@ -2,9 +2,11 @@ package main
 
 import (
 	"cafenetchi-api/internal/config"
+
+	db "cafenetchi-api/internal/db/generated"
 	"cafenetchi-api/internal/handler"
-	"cafenetchi-api/internal/repository"
 	"cafenetchi-api/internal/service"
+	"context"
 	"net/http"
 	"time"
 
@@ -38,11 +40,13 @@ func Routes(cfg config.Config) chi.Router {
 		MaxAge:           300,
 	}))
 
-	userRepo := repository.NewInMemoryUserRepo()
+	pool := config.GetPool(context.Background())
+	queries := db.New(pool)
+
 	otpSvc := service.NewInRedisOTP()
 	smsSvc := service.NewKavenegar(cfg.KavenegarAPIKey, cfg.KavenegarSender)
 
-	s := service.NewAuth(userRepo, otpSvc, smsSvc, "secret")
+	s := service.NewAuth(queries, otpSvc, smsSvc, cfg.JWTSecret)
 
 	h := handler.NewAuth(s)
 

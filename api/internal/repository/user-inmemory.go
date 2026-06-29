@@ -13,7 +13,7 @@ type UserInMemory struct {
 	nextID int64
 }
 
-func NewInMemoryUserRepo() *UserInMemory {
+func NewUserInMemoryRepo() *UserInMemory {
 	return &UserInMemory{
 		users:  make(map[int64]*model.User),
 		nextID: 1,
@@ -60,7 +60,7 @@ func (r *UserInMemory) Create(ctx context.Context, user model.User) error {
 		}
 	}
 
-	user.ID = uint(r.nextID)
+	user.ID = r.nextID
 	r.users[int64(user.ID)] = &user
 	r.nextID++
 

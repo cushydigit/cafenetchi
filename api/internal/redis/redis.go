@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	rds "github.com/redis/go-redis/v9"
@@ -28,7 +27,7 @@ func Init(ctx context.Context, addr, pass string, db int) {
 	}
 
 	client = c
-	fmt.Println("Redis connected successfully")
+	log.Println("✅ Redis connected successfully")
 }
 
 func Close() error {

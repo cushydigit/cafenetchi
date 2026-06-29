@@ -55,7 +55,7 @@ func (h *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload := types.Response{
-		Message: "Authentication Succeed",
+		Message: "Authentication Succeed!",
 		Error:   false,
 		Data:    token,
 	}

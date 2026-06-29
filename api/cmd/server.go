@@ -4,50 +4,59 @@ import (
 	"cafenetchi-api/internal/config"
 	"cafenetchi-api/internal/redis"
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 )
 
 func main() {
 	// load configuration
 	cfg := config.Load()
+
 	// Initialize Database
-	db := config.InitDB(cfg)
+	if err := config.InitPool(context.Background(), cfg.DB.DSN()); err != nil {
+		log.Fatal(err)
+	}
+	defer config.GetPool(context.Background()).Close()
 
 	// Initialize Cache (Redis)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	redis.Init(
 		ctx,
-		fmt.Sprintf("%s:%s", cfg.RdsHost, cfg.RdsPort),
-		cfg.RdsPass, 0,
+		cfg.Redis.RedisAddr(),
+		cfg.Redis.Pass,
+		0,
 	)
 	defer redis.Close()
 
-	// Auto Migrate (for early development)
-	if err := config.AutoMigrate(db); err != nil {
-		log.Printf("migration failed: %v", err)
-	}
-
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("%s", ":"+cfg.ServerPort),
+		Addr:    ":" + cfg.Port,
 		Handler: Routes(*cfg),
 	}
 
 	go func() {
-		log.Printf("server is up and listening at %s", cfg.ServerPort)
+		log.Printf("✅ Server started on :%s", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil {
-			log.Fatalf("server failed: %v", err)
+			if err != http.ErrServerClosed {
+				log.Fatalf("server failed: %v", err)
+			}
 		}
 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
+	quit, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+	defer stop()
+
+	<-quit.Done()
+
+	log.Println("shutting down...")
 
 	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -56,6 +65,6 @@ func main() {
 		log.Fatalf("server shutdown failed: %v", err)
 	}
 
-	log.Println("server stopped")
+	log.Println("Server stopped")
 
 }

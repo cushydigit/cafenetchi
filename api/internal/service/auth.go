@@ -1,8 +1,8 @@
 package service
 
 import (
+	db "cafenetchi-api/internal/db/generated"
 	"cafenetchi-api/internal/model"
-	"cafenetchi-api/internal/repository"
 	"cafenetchi-api/internal/utils"
 	"context"
 	"errors"
@@ -12,18 +12,18 @@ import (
 
 // Auth or AuthService
 type Auth struct {
-	userRepo  repository.UserRepository
-	otpSvc    OTP
-	smsSvc    SMS
-	jwtSecret string
+	userQueries *db.Queries
+	otpSvc      OTP
+	smsSvc      SMS
+	jwtSecret   string
 }
 
-func NewAuth(userRep repository.UserRepository, otpSvc OTP, smsSvc SMS, jwtSecret string) *Auth {
+func NewAuth(userQueries *db.Queries, otpSvc OTP, smsSvc SMS, jwtSecret string) *Auth {
 	return &Auth{
-		userRepo:  userRep,
-		otpSvc:    otpSvc,
-		smsSvc:    smsSvc,
-		jwtSecret: jwtSecret,
+		userQueries: userQueries,
+		otpSvc:      otpSvc,
+		smsSvc:      smsSvc,
+		jwtSecret:   jwtSecret,
 	}
 
 }

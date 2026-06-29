@@ -9,14 +9,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_cafenetchi_dev:/var/lib/postgresql/data 
+      - ./db-data/postgres:/var/lib/postgresql/data 
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "pg_isready -U cafenetchi-user -d cafenetchi-db"]
 
   redis:
     image: redis:7-alpine
@@ -25,12 +22,9 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis_cafenetchi_dev:/data
+      - ./db-data/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   minio:
     image: minio/minio:latest
@@ -43,15 +37,6 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - minio_cafenetchi_dev:/data
+      - ./db-data/minio:/data
     command: server /data --console-address ":9001"
-
-volumes:
-  postgres_cafenetchi_dev:
-  redis_cafenetchi_dev:
-  minio_cafenetchi_dev:
-
-networks:
-  default:
-    name: cafenetchi-dev
 

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -8,45 +9,82 @@ import (
 )
 
 type Config struct {
-	DBHost string
-	DBPort string
-	DBUser string
-	DBPass string
-	DBName string
-	DBSSL  string
+	AppEnv    string
+	Port      string
+	JWTSecret string
 
-	RdsHost string
-	RdsPort string
-	RdsPass string
-
-	ServerPort string
-	JWTSecret  string
+	DB    DBConfig
+	Redis RedisConfig
 
 	KavenegarAPIKey string
 	KavenegarSender string
 }
 
+type DBConfig struct {
+	Host string
+	Port string
+	User string
+	Pass string
+	Name string
+	SSL  string
+}
+
+type RedisConfig struct {
+	Host string
+	Port string
+	Pass string
+}
+
 func Load() *Config {
+	appEnv := getEnv("APP_ENV", "development")
 	// Load .env file in development
-	_ = godotenv.Load()
+	if appEnv == "development" {
+		log.Println("App running on development mode")
+		err := godotenv.Load("../configs/dev.env")
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
+	}
 
 	return &Config{
-		DBHost: getEnv("DB_HOST", "postgres"),
-		DBPort: getEnv("DB_PORT", "5432"),
-		DBUser: getEnv("DB_USER", "cafenetchi-user"),
-		DBPass: getEnv("DB_PASS", "cafenetchi-pass"),
-		DBName: getEnv("DB_NAME", "cafenetchi-db"),
-		DBSSL:  getEnv("DB_SSL", "disable"),
+		AppEnv:    appEnv,
+		Port:      getEnv("PORT", "8080"),
+		JWTSecret: getEnv("JWT_SECRET", ""),
 
-		RdsHost: getEnv("REDIS_HOST", "redis"),
-		RdsPort: getEnv("REDIS_PORT", "6379"),
-		RdsPass: getEnv("REDIS_PASS", ""),
+		DB: DBConfig{
+			Host: getEnv("DB_HOST", "localhost"),
+			Port: getEnv("DB_PORT", "5432"),
+			User: getEnv("DB_USER", ""),
+			Pass: getEnv("DB_PASS", ""),
+			Name: getEnv("DB_NAME", ""),
+			SSL:  getEnv("DB_SSL", "disable"),
+		},
+		Redis: RedisConfig{
+			Host: getEnv("REDIS_HOST", "localhost"),
+			Port: getEnv("REDIS_PORT", "6379"),
+			Pass: getEnv("REDIS_PASS", ""),
+		},
 
-		ServerPort:      getEnv("PORT", "8080"),
-		JWTSecret:       getEnv("JWT_SECRET", ""),
 		KavenegarAPIKey: getEnv("KAVENEGAR_API_KEY", ""),
 		KavenegarSender: getEnv("KAVENEGAR_SENDER", ""),
 	}
+}
+
+func (c RedisConfig) RedisAddr() string {
+	return fmt.Sprintf("%s:%s", c.Host, c.Port)
+
+}
+
+func (c DBConfig) DSN() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		c.User,
+		c.Pass,
+		c.Host,
+		c.Port,
+		c.Name,
+	)
+
 }
 
 func getEnv(key, defaultValue string) string {

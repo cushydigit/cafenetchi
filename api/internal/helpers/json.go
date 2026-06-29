@@ -8,7 +8,15 @@ import (
 	"net/http"
 )
 
-// read json
+// ReadJSON reads JSON data from an HTTP request body and decodes it into the provided data structure.
+//
+// Parameters:
+// - w: The HTTP response writer to write any error responses to.
+// - r: The HTTP request containing the JSON data to be read.
+// - data: The data structure to decode the JSON data into.
+//
+// Returns:
+// - error: An error if there was an issue reading or decoding the JSON data.
 func ReadJSON(w http.ResponseWriter, r *http.Request, data any) error {
 	maxBytes := 1024 * 1024 // one megabyte
 
@@ -26,6 +34,16 @@ func ReadJSON(w http.ResponseWriter, r *http.Request, data any) error {
 	return nil
 }
 
+// WriteJSON writes a JSON response to the HTTP response writer.
+//
+// Parameters:
+// - w: The HTTP response writer to write the JSON response to.
+// - status: The HTTP status code to set in the response.
+// - data: The data to be marshaled into JSON.
+// - headers: Optional custom headers to be included in the response.
+//
+// Returns:
+// - error: An error if there was an issue writing the JSON response.
 func WriteJSON(w http.ResponseWriter, status int, data any, headers ...http.Header) error {
 	out, err := json.Marshal(data)
 	if err != nil {
@@ -47,6 +65,15 @@ func WriteJSON(w http.ResponseWriter, status int, data any, headers ...http.Head
 	return nil
 }
 
+// ErrorJSON writes an error response to the HTTP response writer.
+//
+// Parameters:
+// - w: The HTTP response writer to write the error response to.
+// - err: The error to be included in the error response.
+// - status: Optional status code to be included in the error response. If not provided, the default status code is http.StatusBadRequest.
+//
+// Returns:
+// - error: An error if there was an issue writing the error response.
 func ErrorJSON(w http.ResponseWriter, err error, status ...int) error {
 	statusCode := http.StatusBadRequest
 	if len(status) > 0 {

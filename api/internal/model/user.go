@@ -10,32 +10,40 @@ const (
 	RoleAdmin    Role = "admin"
 )
 
+type UserStatus string
+
+const (
+	UserActive  UserStatus = "active"
+	UserBlocked UserStatus = "blocked"
+	UserDeleted UserStatus = "deleted"
+)
+
 type User struct {
-	ID         uint   `gorm:"primarykey" json:"id"`
-	Phone      string `gorm:"unique;not null" json:"phone"`
-	FullName   string `json:"full_name"`
-	AvatarURL  string `json:"avatar_url"`
-	IsVerified bool   `gorm:"default:false" json:"is_verified"`
-	Status     string `gorm:"default:'active'" json:"status"`
+	ID        int64
+	Phone     string
+	FullName  string
+	AvatarURL string
 
-	Roles []Role `gorm:"-" json:"roles"` // Will be handled via UserProfile
+	IsVerified bool
+	Status     UserStatus
 
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type UserProfile struct {
-	ID       uint `gorm:"primarykey" json:"id"`
-	UserID   uint `gorm:"uniqueIndex" json:"user_id"`
-	Role     Role `gorm:"not null" json:"role"`
-	IsActive bool `gorm:"default:true" json:"is_active"`
+	ID     int64
+	UserID int64
+	Role   Role
 
-	// Agent fields
-	AgentLevel string  `json:"agent_level"`
-	HourlyRate float64 `json:"hourly_rate"`
-	Rating     float64 `gorm:"default:0" json:"rating"`
-	TotalTasks int     `gorm:"default:0" json:"total_tasks"`
+	IsActive bool
 
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	// Agent-specific fields
+	AgentLevel string
+	HourlyRate float64
+	Rating     float64
+	TotalTasks int
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
