@@ -38,7 +38,8 @@ func (h *Auth) SendOTP(w http.ResponseWriter, r *http.Request) {
 		Error:   false,
 		Message: "OPT send successfully",
 	}
-	helpers.WriteJSON(w, http.StatusOK, payload)
+
+	h.writeJSON(w, http.StatusOK, payload)
 }
 
 func (h *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
@@ -66,9 +67,7 @@ func (h *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		payload.Message = "Login successful"
 	}
 
-	if err := helpers.WriteJSON(w, http.StatusOK, payload); err != nil {
-		h.logger.Error("failed to write response json", err)
-	}
+	h.writeJSON(w, http.StatusOK, payload)
 
 }
 

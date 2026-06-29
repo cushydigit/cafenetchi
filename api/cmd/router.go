@@ -8,7 +8,6 @@ import (
 	"cafenetchi-api/internal/handler"
 	"cafenetchi-api/internal/service"
 	"context"
-	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -56,12 +55,6 @@ func Routes(cfg config.Config) chi.Router {
 	// routes
 	r.Post("/otp", h.SendOTP)
 	r.Post("/verify", h.VerifyOTP)
-
-	// Health Check
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("cafenetchi api server up and healthy"))
-	})
 
 	return r
 }

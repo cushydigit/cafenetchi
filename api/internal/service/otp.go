@@ -3,13 +3,14 @@ package service
 import (
 	"cafenetchi-api/internal/redis"
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 )
 
 type OTP interface {
 	GenerateOTP(ctx context.Context, phone string) (string, error)
-	ValidateOTP(ctx context.Context, phone, otp string) bool
+	ValidateOTP(ctx context.Context, phone, otp string) (bool, error)
 }
 
 type InRedisOTP struct{}
@@ -27,14 +28,16 @@ func (s *InRedisOTP) GenerateOTP(ctx context.Context, phone string) (string, err
 	return otp, nil
 }
 
-func (s *InRedisOTP) ValidateOTP(ctx context.Context, phone, otp string) bool {
+func (s *InRedisOTP) ValidateOTP(ctx context.Context, phone, otp string) (bool, error) {
 	storedOTP, err := redis.GetOTP(ctx, phone)
 	if err != nil {
-		return false
+		return false, errors.New("Failed to retrieve OTP")
 	}
 	if storedOTP == otp {
-		redis.DeleteOTP(ctx, phone)
-		return true
+		if err := redis.DeleteOTP(ctx, phone); err != nil {
+			return false, errors.New("Failed to delete OTP")
+		}
+		return true, nil
 	}
-	return false
+	return false, nil
 }

@@ -44,8 +44,12 @@ func (s *Auth) SendOTP(ctx context.Context, phone string) error {
 
 func (s *Auth) ValidateOTP(ctx context.Context, phone, code string) (*model.User, string, bool, error) {
 	// verify OTP
-	if !s.otpSvc.ValidateOTP(ctx, phone, code) {
-		return nil, "", false, errors.New("Invalid otp code: " + code)
+	validated, err := s.otpSvc.ValidateOTP(ctx, phone, code)
+	if err != nil {
+		return nil, "", false, err
+	}
+	if !validated {
+		return nil, "", false, errors.New("invalid otp code")
 	}
 	// TODO: Find or Create User
 

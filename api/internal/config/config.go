@@ -39,7 +39,7 @@ func Load() *Config {
 	appEnv := getEnv("APP_ENV", "development")
 	// Load .env file in development
 	if appEnv == "development" {
-		log.Println("App running on development mode")
+		log.Println("⚠️ app running on development mode")
 		err := godotenv.Load("../configs/dev.env")
 		if err != nil {
 			log.Fatal("Error loading .env file")
