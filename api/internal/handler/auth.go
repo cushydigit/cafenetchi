@@ -5,32 +5,32 @@ import (
 	"cafenetchi-api/internal/service"
 	"cafenetchi-api/internal/types"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
 type Auth struct {
-	svc *service.Auth
+	svc    *service.Auth
+	logger *slog.Logger
 }
 
-func NewAuth(svc *service.Auth) *Auth {
+func NewAuth(svc *service.Auth, logger *slog.Logger) *Auth {
 	return &Auth{
-		svc: svc,
+		svc:    svc,
+		logger: logger,
 	}
 }
 
 func (h *Auth) SendOTP(w http.ResponseWriter, r *http.Request) {
 	var req types.SendOTPRequest
 	if err := helpers.ReadJSON(w, r, &req); err != nil {
-		log.Println(err)
-		helpers.ErrorJSON(w, errors.New("Invalid request"))
+		h.errorJSON(w, errors.New("Invalid request"), http.StatusBadRequest)
 		return
 	}
 
 	// TODO: maybe require a middlewares for phone validation format
 	if err := h.svc.SendOTP(r.Context(), req.Phone); err != nil {
-		log.Println(err)
-		helpers.ErrorJSON(w, errors.New("Failed to send OTP"), http.StatusInternalServerError)
+		h.errorJSON(w, errors.New("Failed to send OTP"), http.StatusInternalServerError)
 		return
 	}
 
@@ -44,13 +44,13 @@ func (h *Auth) SendOTP(w http.ResponseWriter, r *http.Request) {
 func (h *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	var req types.VerifyOTPRequest
 	if err := helpers.ReadJSON(w, r, &req); err != nil {
-		helpers.ErrorJSON(w, errors.New("Invalid request"), http.StatusBadRequest)
+		h.errorJSON(w, errors.New("Invalid request"), http.StatusBadRequest)
 		return
 	}
 
 	_, token, isNewUser, err := h.svc.ValidateOTP(r.Context(), req.Phone, req.Code)
 	if err != nil {
-		helpers.ErrorJSON(w, errors.New("Not authenticated"), http.StatusUnauthorized)
+		h.errorJSON(w, errors.New("Not authenticated"), http.StatusUnauthorized)
 		return
 	}
 
@@ -66,6 +66,26 @@ func (h *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		payload.Message = "Login successful"
 	}
 
-	helpers.WriteJSON(w, http.StatusOK, payload)
+	if err := helpers.WriteJSON(w, http.StatusOK, payload); err != nil {
+		h.logger.Error("failed to write response json", err)
+	}
 
+}
+
+func (h *Auth) errorJSON(w http.ResponseWriter, err error, status int) {
+	if e := helpers.ErrorJSON(w, err, status); e != nil {
+		h.logger.Error(
+			"failed writing error json response",
+			"error", e,
+		)
+	}
+}
+
+func (h *Auth) writeJSON(w http.ResponseWriter, status int, data any) {
+	if e := helpers.WriteJSON(w, status, data); e != nil {
+		h.logger.Error(
+			"failed writing json response",
+			"error", e,
+		)
+	}
 }

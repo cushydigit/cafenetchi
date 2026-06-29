@@ -2,6 +2,7 @@ package main
 
 import (
 	"cafenetchi-api/internal/config"
+	"cafenetchi-api/internal/logger"
 
 	db "cafenetchi-api/internal/db/generated"
 	"cafenetchi-api/internal/handler"
@@ -46,9 +47,11 @@ func Routes(cfg config.Config) chi.Router {
 	otpSvc := service.NewInRedisOTP()
 	smsSvc := service.NewKavenegar(cfg.KavenegarAPIKey, cfg.KavenegarSender)
 
-	s := service.NewAuth(queries, otpSvc, smsSvc, cfg.JWTSecret)
+	l := logger.New()
 
-	h := handler.NewAuth(s)
+	s := service.NewAuth(queries, otpSvc, smsSvc, cfg.JWTSecret, l)
+
+	h := handler.NewAuth(s, l)
 
 	// routes
 	r.Post("/otp", h.SendOTP)

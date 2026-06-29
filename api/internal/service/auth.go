@@ -6,7 +6,7 @@ import (
 	"cafenetchi-api/internal/utils"
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"time"
 )
 
@@ -16,14 +16,16 @@ type Auth struct {
 	otpSvc      OTP
 	smsSvc      SMS
 	jwtSecret   string
+	logger      *slog.Logger
 }
 
-func NewAuth(userQueries *db.Queries, otpSvc OTP, smsSvc SMS, jwtSecret string) *Auth {
+func NewAuth(userQueries *db.Queries, otpSvc OTP, smsSvc SMS, jwtSecret string, logger *slog.Logger) *Auth {
 	return &Auth{
 		userQueries: userQueries,
 		otpSvc:      otpSvc,
 		smsSvc:      smsSvc,
 		jwtSecret:   jwtSecret,
+		logger:      logger,
 	}
 
 }
@@ -35,7 +37,7 @@ func (s *Auth) SendOTP(ctx context.Context, phone string) error {
 		return err
 	}
 
-	log.Printf("generate code for %s is %s", phone, otpCode)
+	s.logger.Info("code generated for opt", phone, otpCode)
 
 	return s.smsSvc.SendOTP(phone, otpCode)
 }
