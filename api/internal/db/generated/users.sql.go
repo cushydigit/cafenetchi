@@ -46,7 +46,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, phone, full_name, avatar_url, is_verified, status, created_at, updated_at
+SELECT id, phone, full_name, avatar_url, is_verified, status, created_at, updated_at 
 FROM users
 WHERE id = $1
 `
@@ -90,7 +90,7 @@ func (q *Queries) GetUserByPhone(ctx context.Context, phone string) (User, error
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, phone, full_name, avatar_url, is_verified, status, created_at, updated_at
+SELECT id, phone, full_name, avatar_url, is_verified, status, created_at, updated_at 
 FROM users
 `
 

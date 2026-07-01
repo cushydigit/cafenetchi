@@ -5,6 +5,7 @@ import (
 	"cafenetchi-api/internal/model"
 	"cafenetchi-api/internal/utils"
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"time"
@@ -37,8 +38,6 @@ func (s *Auth) SendOTP(ctx context.Context, phone string) error {
 		return err
 	}
 
-	s.logger.Info("code generated for opt", phone, otpCode)
-
 	return s.smsSvc.SendOTP(phone, otpCode)
 }
 
@@ -52,12 +51,42 @@ func (s *Auth) ValidateOTP(ctx context.Context, phone, code string) (*model.User
 		return nil, "", false, errors.New("invalid otp code")
 	}
 	// TODO: Find or Create User
+	var isNewUser bool
+	var user db.User
+	user, err = s.userQueries.GetUserByPhone(ctx, phone)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return nil, "", false, err
+		}
+		// user doesn't exist
+		user, err = s.userQueries.CreateUser(ctx, db.CreateUserParams{
+			Phone: phone,
+		})
 
-	token, err := utils.GenerateJWT(999, phone, code, s.jwtSecret, time.Second*3600*24)
+		if err != nil {
+			return nil, "", false, err
+		}
+		isNewUser = true
+	}
+
+	token, err := utils.GenerateJWT(user.ID, phone, "user", s.jwtSecret, time.Second*3600*24)
 	if err != nil {
 		return nil, "", false, err
 	}
 
-	return &model.User{}, token, false, nil
+	return convertUserModel(&user), token, isNewUser, nil
 
+}
+
+func convertUserModel(user *db.User) *model.User {
+	return &model.User{
+		ID:         user.ID,
+		Phone:      user.Phone,
+		FullName:   user.FullName.String,
+		AvatarURL:  user.AvatarUrl.String,
+		IsVerified: user.IsVerified.Bool,
+		// Status:     user.Status.String,
+		CreatedAt: user.CreatedAt.Time,
+		UpdatedAt: user.UpdatedAt.Time,
+	}
 }

@@ -7,13 +7,13 @@ import (
 )
 
 type Claims struct {
-	UserID uint   `json:"user_id"`
+	UserID int64  `json:"user_id"`
 	Phone  string `json:"phone"`
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(userID uint, phone, role, secretKey string, dur time.Duration) (string, error) {
+func GenerateJWT(userID int64, phone, role, secretKey string, dur time.Duration) (string, error) {
 
 	claims := Claims{
 		UserID: userID,

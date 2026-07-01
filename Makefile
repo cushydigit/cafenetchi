@@ -1,6 +1,13 @@
 include configs/dev.env
 export
 
+# Environment
+DEV_ENV:./configs/dev.env
+PRO_ENV:./configs/pro.env
+
+DEV_COMPOSE=docker compose --enf-file $(DEV_ENV)
+PRO_COMPOSE=docker compose -f docker-compose.prod.yml --env-file $(PRO_ENV)
+
 # API Development
 build:
 	@echo "building cafenetchi-api server..."
@@ -12,13 +19,14 @@ run: build
 
 dev: 
 	@echo "starting development environment..."
-	@docker compose --env-file ./configs/dev.env up -d
+	@$(DEV_COMPOSE) up -d
 	@cd api && air -c .air.toml
 
 prod:
 	@echo "starting production environment..."
-	@docker compose --env-file ./configs/prod.env up
+	@$(PRO_COMPOSE) up -d -build
 
+# Testing
 test:
 	@echo "testing.."
 	@cd ./api && go test ./... -v
@@ -51,17 +59,26 @@ migrate-create:
 
 # Docker
 docker-up:
-	docker compose --env-file ./configs/dev.env up -d
+	$(DEV_COMPOSE) up -d
 
 docker-down:
-	docker compose down
+	$(DEV_COMPOSE) down
 
 docker-logs:
-	docker compose logs -f
+	$(DEV_COMPOSE) logs -f
 
 docker-reset:
-	docker compose down -v
-	docker compose --env-file ./configs/dev.env up -d --build
+	$(DEV_COMPOSE) down -v
+	$(DEV_COMPOSE) up -d --build
+
+docker-prod-up:
+	$(PRO_COMPOSE) up -d --build
+
+docker-build-prod:
+	$(PRO_COMPOSE) down
+
+docker-prod-logs:
+	$(PRO_COMPOSE) logs -f
 
 # ===============================================
 # Utilities

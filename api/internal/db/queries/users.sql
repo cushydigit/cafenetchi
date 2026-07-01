@@ -1,14 +1,14 @@
 -- name: ListUsers :many
-SELECT id, phone, full_name, avatar_url, is_verified, status, created_at, updated_at
+SELECT * 
 FROM users;
 
 -- name: GetUserByID :one
-SELECT id, phone, full_name, avatar_url, is_verified, status, created_at, updated_at
+SELECT * 
 FROM users
 WHERE id = $1;
 
 -- name: GetUserByPhone :one
-SELECT id, phone, full_name, avatar_url, is_verified, status, created_at, updated_at
+SELECT *
 FROM users 
 WHERE phone = $1;
 

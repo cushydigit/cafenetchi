@@ -8,27 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Conversation struct {
-	ID         int64
-	TaskID     pgtype.Int8
-	CustomerID int64
-	AgentID    int64
-	Type       pgtype.Text
-	Status     pgtype.Text
-	CreatedAt  pgtype.Timestamp
-}
-
-type Message struct {
-	ID             int64
-	ConversationID int64
-	SenderID       int64
-	MessageText    string
-	FileUrl        pgtype.Text
-	FileType       pgtype.Text
-	IsRead         pgtype.Bool
-	CreatedAt      pgtype.Timestamp
-}
-
 type User struct {
 	ID         int64
 	Phone      string
@@ -36,8 +15,8 @@ type User struct {
 	AvatarUrl  pgtype.Text
 	IsVerified pgtype.Bool
 	Status     pgtype.Text
-	CreatedAt  pgtype.Timestamp
-	UpdatedAt  pgtype.Timestamp
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
 }
 
 type UserProfile struct {
@@ -49,6 +28,6 @@ type UserProfile struct {
 	HourlyRate pgtype.Numeric
 	Rating     pgtype.Numeric
 	TotalTasks pgtype.Int4
-	CreatedAt  pgtype.Timestamp
-	UpdatedAt  pgtype.Timestamp
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
 }

@@ -7,8 +7,8 @@ CREATE TABLE users (
     avatar_url TEXT,
     is_verified BOOLEAN DEFAULT false,
     status TEXT DEFAULT 'active',
-    created_at TIMESTAMP NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE user_profiles (
@@ -20,8 +20,8 @@ CREATE TABLE user_profiles (
     hourly_rate NUMERIC,
     rating NUMERIC DEFAULT 0,
     total_tasks INT DEFAULT 0,
-    created_at TIMESTAMP NOT NULL DEFAULT now(),
-    updated_at TIMESTAMP NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- +goose Down
