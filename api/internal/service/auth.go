@@ -2,12 +2,12 @@ package service
 
 import (
 	db "cafenetchi-api/internal/db/generated"
+	"cafenetchi-api/internal/logger"
 	"cafenetchi-api/internal/model"
 	"cafenetchi-api/internal/utils"
 	"context"
 	"database/sql"
 	"errors"
-	"log/slog"
 	"time"
 )
 
@@ -17,10 +17,10 @@ type Auth struct {
 	otpSvc      OTP
 	smsSvc      SMS
 	jwtSecret   string
-	logger      *slog.Logger
+	logger      *logger.Logger
 }
 
-func NewAuth(userQueries *db.Queries, otpSvc OTP, smsSvc SMS, jwtSecret string, logger *slog.Logger) *Auth {
+func NewAuth(userQueries *db.Queries, otpSvc OTP, smsSvc SMS, jwtSecret string, logger *logger.Logger) *Auth {
 	return &Auth{
 		userQueries: userQueries,
 		otpSvc:      otpSvc,

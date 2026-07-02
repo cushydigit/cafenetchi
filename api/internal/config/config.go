@@ -1,8 +1,8 @@
 package config
 
 import (
+	"cafenetchi-api/internal/logger"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -35,38 +35,44 @@ type RedisConfig struct {
 	Pass string
 }
 
-func Load() *Config {
-	appEnv := getEnv("APP_ENV", "development")
+func Load(l *logger.Logger) *Config {
+	appEnv := getEnv("APP_ENV", "development", l)
 	// Load .env file in development
 	if appEnv == "development" {
-		log.Println("⚠️ app running on development mode")
+		l.Warn(
+			"app running on development mode",
+			"message", "⚠️ app running on development mode")
 		err := godotenv.Load("../configs/dev.env")
 		if err != nil {
-			log.Fatal("Error loading .env file")
+			l.Error(
+				"error loading .env file",
+				"message",
+				err,
+			)
 		}
 	}
 
 	return &Config{
 		AppEnv:    appEnv,
-		Port:      getEnv("PORT", "8080"),
-		JWTSecret: getEnv("JWT_SECRET", ""),
+		Port:      getEnv("PORT", "8080", l),
+		JWTSecret: getEnv("JWT_SECRET", "", l),
 
 		DB: DBConfig{
-			Host: getEnv("DB_HOST", "localhost"),
-			Port: getEnv("DB_PORT", "5432"),
-			User: getEnv("DB_USER", ""),
-			Pass: getEnv("DB_PASS", ""),
-			Name: getEnv("DB_NAME", ""),
-			SSL:  getEnv("DB_SSL", "disable"),
+			Host: getEnv("DB_HOST", "localhost", l),
+			Port: getEnv("DB_PORT", "5432", l),
+			User: getEnv("DB_USER", "", l),
+			Pass: getEnv("DB_PASS", "", l),
+			Name: getEnv("DB_NAME", "", l),
+			SSL:  getEnv("DB_SSL", "disable", l),
 		},
 		Redis: RedisConfig{
-			Host: getEnv("REDIS_HOST", "localhost"),
-			Port: getEnv("REDIS_PORT", "6379"),
-			Pass: getEnv("REDIS_PASS", ""),
+			Host: getEnv("REDIS_HOST", "localhost", l),
+			Port: getEnv("REDIS_PORT", "6379", l),
+			Pass: getEnv("REDIS_PASS", "", l),
 		},
 
-		KavenegarAPIKey: getEnv("KAVENEGAR_API_KEY", ""),
-		KavenegarSender: getEnv("KAVENEGAR_SENDER", ""),
+		KavenegarAPIKey: getEnv("KAVENEGAR_API_KEY", "", l),
+		KavenegarSender: getEnv("KAVENEGAR_SENDER", "", l),
 	}
 }
 
@@ -87,10 +93,13 @@ func (c DBConfig) DSN() string {
 
 }
 
-func getEnv(key, defaultValue string) string {
+func getEnv(key, defaultValue string, l *logger.Logger) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
 	}
-	log.Printf("⚠️  Environment variable %s not set, using default: %s", key, defaultValue)
+	l.Warn(
+		"Environment variable not set",
+		key,
+	)
 	return defaultValue
 }

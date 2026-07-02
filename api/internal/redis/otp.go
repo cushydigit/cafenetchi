@@ -30,8 +30,8 @@ func otpKey(phone string) string {
 //
 // Return:
 // - error: An error if there was a problem setting the OTP.
-func SetOTP(ctx context.Context, phone, otp string) error {
-	return client.Set(ctx, otpKey(phone), otp, OTP_TTL).Err()
+func (c *Client) SetOTP(ctx context.Context, phone, otp string) error {
+	return c.Set(ctx, otpKey(phone), otp, OTP_TTL).Err()
 }
 
 // GetOTP retrieves the OTP (One-Time Password) associated with a given phone number from Redis.
@@ -43,8 +43,8 @@ func SetOTP(ctx context.Context, phone, otp string) error {
 // Returns:
 // - string: The OTP associated with the phone number.
 // - error: An error if there was a problem retrieving the OTP.
-func GetOTP(ctx context.Context, phone string) (string, error) {
-	return client.Get(ctx, otpKey(phone)).Result()
+func (c *Client) GetOTP(ctx context.Context, phone string) (string, error) {
+	return c.Get(ctx, otpKey(phone)).Result()
 }
 
 // DeleteOTP deletes the OTP (One-Time Password) associated with a given phone number from Redis.
@@ -55,6 +55,6 @@ func GetOTP(ctx context.Context, phone string) (string, error) {
 //
 // Returns:
 // - error: An error if there was a problem deleting the OTP.
-func DeleteOTP(ctx context.Context, phone string) error {
-	return client.Del(ctx, otpKey(phone)).Err()
+func (c *Client) DeleteOTP(ctx context.Context, phone string) error {
+	return c.Del(ctx, otpKey(phone)).Err()
 }

@@ -2,22 +2,22 @@ package handler
 
 import (
 	"cafenetchi-api/internal/helpers"
+	"cafenetchi-api/internal/logger"
 	"cafenetchi-api/internal/service"
 	"cafenetchi-api/internal/types"
 	"errors"
-	"log/slog"
 	"net/http"
 )
 
 type Auth struct {
 	svc    *service.Auth
-	logger *slog.Logger
+	logger *logger.Logger
 }
 
-func NewAuth(svc *service.Auth, logger *slog.Logger) *Auth {
+func NewAuth(svc *service.Auth, l *logger.Logger) *Auth {
 	return &Auth{
 		svc:    svc,
-		logger: logger,
+		logger: l,
 	}
 }
 

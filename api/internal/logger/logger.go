@@ -5,8 +5,10 @@ import (
 	"os"
 )
 
-func New() *slog.Logger {
-	return slog.New(
-		slog.NewJSONHandler(os.Stdout, nil),
-	)
+type Logger struct {
+	*slog.Logger
+}
+
+func New() *Logger {
+	return &Logger{slog.New(slog.NewJSONHandler(os.Stdout, nil))}
 }

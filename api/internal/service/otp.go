@@ -13,15 +13,19 @@ type OTP interface {
 	ValidateOTP(ctx context.Context, phone, otp string) (bool, error)
 }
 
-type InRedisOTP struct{}
+type InRedisOTP struct {
+	client *redis.Client
+}
 
-func NewInRedisOTP() *InRedisOTP {
-	return &InRedisOTP{}
+func NewInRedisOTP(rdsClient *redis.Client) *InRedisOTP {
+	return &InRedisOTP{
+		client: rdsClient,
+	}
 }
 
 func (s *InRedisOTP) GenerateOTP(ctx context.Context, phone string) (string, error) {
 	otp := fmt.Sprintf("%06d", rand.Intn(1000000))
-	if err := redis.SetOTP(ctx, phone, otp); err != nil {
+	if err := s.client.SetOTP(ctx, phone, otp); err != nil {
 		return "", err
 	}
 
@@ -29,12 +33,12 @@ func (s *InRedisOTP) GenerateOTP(ctx context.Context, phone string) (string, err
 }
 
 func (s *InRedisOTP) ValidateOTP(ctx context.Context, phone, otp string) (bool, error) {
-	storedOTP, err := redis.GetOTP(ctx, phone)
+	storedOTP, err := s.client.GetOTP(ctx, phone)
 	if err != nil {
 		return false, errors.New("Failed to retrieve OTP")
 	}
 	if storedOTP == otp {
-		if err := redis.DeleteOTP(ctx, phone); err != nil {
+		if err := s.client.DeleteOTP(ctx, phone); err != nil {
 			return false, errors.New("Failed to delete OTP")
 		}
 		return true, nil

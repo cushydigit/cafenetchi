@@ -1,13 +1,8 @@
 package main
 
 import (
-	"cafenetchi-api/internal/config"
-	"cafenetchi-api/internal/logger"
-
-	db "cafenetchi-api/internal/db/generated"
 	"cafenetchi-api/internal/handler"
-	"cafenetchi-api/internal/service"
-	"context"
+	"cafenetchi-api/internal/logger"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -22,7 +17,7 @@ import (
 //
 // Returns:
 // - r: The configured chi router.
-func Routes(cfg config.Config) chi.Router {
+func Routes(auth *handler.Auth, appLogger *logger.Logger) chi.Router {
 	// Initialize Router
 	r := chi.NewRouter()
 
@@ -40,21 +35,9 @@ func Routes(cfg config.Config) chi.Router {
 		MaxAge:           300,
 	}))
 
-	pool := config.GetPool(context.Background())
-	queries := db.New(pool)
-
-	otpSvc := service.NewInRedisOTP()
-	smsSvc := service.NewKavenegar(cfg.KavenegarAPIKey, cfg.KavenegarSender)
-
-	l := logger.New()
-
-	s := service.NewAuth(queries, otpSvc, smsSvc, cfg.JWTSecret, l)
-
-	h := handler.NewAuth(s, l)
-
 	// routes
-	r.Post("/otp", h.SendOTP)
-	r.Post("/verify", h.VerifyOTP)
+	r.Post("/otp", auth.SendOTP)
+	r.Post("/verify", auth.VerifyOTP)
 
 	return r
 }

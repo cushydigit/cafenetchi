@@ -2,10 +2,10 @@ include configs/dev.env
 export
 
 # Environment
-DEV_ENV:./configs/dev.env
-PRO_ENV:./configs/pro.env
+DEV_ENV=./configs/dev.env
+PRO_ENV=./configs/pro.env
 
-DEV_COMPOSE=docker compose --enf-file $(DEV_ENV)
+DEV_COMPOSE=docker compose --env-file $(DEV_ENV)
 PRO_COMPOSE=docker compose -f docker-compose.prod.yml --env-file $(PRO_ENV)
 
 # API Development
@@ -19,7 +19,7 @@ run: build
 
 dev: 
 	@echo "starting development environment..."
-	@$(DEV_COMPOSE) up -d
+	$(DEV_COMPOSE) up -d
 	@cd api && air -c .air.toml
 
 prod:
