@@ -10,6 +10,14 @@ const (
 	OTP_TTL = 2 * time.Minute
 )
 
+type OTPStore struct {
+	client *Client
+}
+
+func NewOTPStore(client *Client) *OTPStore {
+	return &OTPStore{client: client}
+}
+
 // otpKey generates a key for storing OTPs in Redis.
 //
 // Parameters:
@@ -30,8 +38,8 @@ func otpKey(phone string) string {
 //
 // Return:
 // - error: An error if there was a problem setting the OTP.
-func (c *Client) SetOTP(ctx context.Context, phone, otp string) error {
-	return c.Set(ctx, otpKey(phone), otp, OTP_TTL).Err()
+func (c *OTPStore) SetOTP(ctx context.Context, phone, otp string) error {
+	return c.client.rdsClient.Set(ctx, otpKey(phone), otp, OTP_TTL).Err()
 }
 
 // GetOTP retrieves the OTP (One-Time Password) associated with a given phone number from Redis.
@@ -43,8 +51,8 @@ func (c *Client) SetOTP(ctx context.Context, phone, otp string) error {
 // Returns:
 // - string: The OTP associated with the phone number.
 // - error: An error if there was a problem retrieving the OTP.
-func (c *Client) GetOTP(ctx context.Context, phone string) (string, error) {
-	return c.Get(ctx, otpKey(phone)).Result()
+func (c *OTPStore) GetOTP(ctx context.Context, phone string) (string, error) {
+	return c.client.rdsClient.Get(ctx, otpKey(phone)).Result()
 }
 
 // DeleteOTP deletes the OTP (One-Time Password) associated with a given phone number from Redis.
@@ -55,6 +63,6 @@ func (c *Client) GetOTP(ctx context.Context, phone string) (string, error) {
 //
 // Returns:
 // - error: An error if there was a problem deleting the OTP.
-func (c *Client) DeleteOTP(ctx context.Context, phone string) error {
-	return c.Del(ctx, otpKey(phone)).Err()
+func (c *OTPStore) DelOTP(ctx context.Context, phone string) error {
+	return c.client.rdsClient.Del(ctx, otpKey(phone)).Err()
 }

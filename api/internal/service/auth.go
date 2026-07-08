@@ -69,7 +69,13 @@ func (s *Auth) ValidateOTP(ctx context.Context, phone, code string) (*model.User
 		isNewUser = true
 	}
 
-	token, err := utils.GenerateJWT(user.ID, phone, "user", s.jwtSecret, time.Second*3600*24)
+	token, err := utils.GenerateJWT(
+		user.ID,
+		user.Phone,
+		"user",
+		s.jwtSecret,
+		time.Second*3600*24,
+	)
 	if err != nil {
 		return nil, "", false, err
 	}

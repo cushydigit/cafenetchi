@@ -1,44 +1,50 @@
 package service
 
 import (
-	"cafenetchi-api/internal/redis"
 	"context"
+	"crypto/rand"
+	"encoding/binary"
 	"errors"
 	"fmt"
-	"math/rand"
 )
+
+type OTPStore interface {
+	SetOTP(ctx context.Context, phone, otp string) error
+	GetOTP(ctx context.Context, phone string) (string, error)
+	DelOTP(ctx context.Context, phone string) error
+}
 
 type OTP interface {
 	GenerateOTP(ctx context.Context, phone string) (string, error)
 	ValidateOTP(ctx context.Context, phone, otp string) (bool, error)
 }
 
-type InRedisOTP struct {
-	client *redis.Client
+type RedisOTP struct {
+	store OTPStore
 }
 
-func NewInRedisOTP(rdsClient *redis.Client) *InRedisOTP {
-	return &InRedisOTP{
-		client: rdsClient,
-	}
+func NewRedisOTP(store OTPStore) *RedisOTP {
+	return &RedisOTP{store: store}
 }
 
-func (s *InRedisOTP) GenerateOTP(ctx context.Context, phone string) (string, error) {
-	otp := fmt.Sprintf("%06d", rand.Intn(1000000))
-	if err := s.client.SetOTP(ctx, phone, otp); err != nil {
+func (s *RedisOTP) GenerateOTP(ctx context.Context, phone string) (string, error) {
+	var b [4]byte
+	if _, err := rand.Read(b[:]); err != nil {
 		return "", err
 	}
 
-	return otp, nil
+	n := binary.BigEndian.Uint32(b[:]) % 1000000
+
+	return fmt.Sprintf("%06d", n), nil
 }
 
-func (s *InRedisOTP) ValidateOTP(ctx context.Context, phone, otp string) (bool, error) {
-	storedOTP, err := s.client.GetOTP(ctx, phone)
+func (s *RedisOTP) ValidateOTP(ctx context.Context, phone, otp string) (bool, error) {
+	storedOTP, err := s.store.GetOTP(ctx, phone)
 	if err != nil {
 		return false, errors.New("Failed to retrieve OTP")
 	}
 	if storedOTP == otp {
-		if err := s.client.DeleteOTP(ctx, phone); err != nil {
+		if err := s.store.DelOTP(ctx, phone); err != nil {
 			return false, errors.New("Failed to delete OTP")
 		}
 		return true, nil

@@ -60,10 +60,14 @@ func main() {
 		)
 		return
 	}
-	defer rds.Close()
+	defer rds.Close(appCtx)
+
+	// OTP store
+	otpStore := redis.NewOTPStore(rds)
+	limitStore := redis.NewRedisLimiter(rds, "opt", 5, time.Minute)
 
 	// services
-	otpSvc := service.NewInRedisOTP(rds)
+	otpSvc := service.NewRedisOTP(otpStore)
 
 	smsSvc := service.NewKavenegar(
 		cfg.KavenegarAPIKey,
@@ -86,6 +90,7 @@ func main() {
 	// router
 	router := Routes(
 		authHandler,
+		limitStore,
 		appLogger,
 	)
 

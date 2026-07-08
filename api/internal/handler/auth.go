@@ -5,7 +5,6 @@ import (
 	"cafenetchi-api/internal/logger"
 	"cafenetchi-api/internal/service"
 	"cafenetchi-api/internal/types"
-	"errors"
 	"net/http"
 )
 
@@ -24,13 +23,13 @@ func NewAuth(svc *service.Auth, l *logger.Logger) *Auth {
 func (h *Auth) SendOTP(w http.ResponseWriter, r *http.Request) {
 	var req types.SendOTPRequest
 	if err := helpers.ReadJSON(w, r, &req); err != nil {
-		h.errorJSON(w, errors.New("Invalid request"), http.StatusBadRequest)
+		helpers.Error(w, types.ErrInvalidRequest)
 		return
 	}
 
 	// TODO: maybe require a middlewares for phone validation format
 	if err := h.svc.SendOTP(r.Context(), req.Phone); err != nil {
-		h.errorJSON(w, errors.New("Failed to send OTP"), http.StatusInternalServerError)
+		helpers.Error(w, types.ErrInternalServer)
 		return
 	}
 
@@ -39,19 +38,20 @@ func (h *Auth) SendOTP(w http.ResponseWriter, r *http.Request) {
 		Message: "OPT send successfully",
 	}
 
-	h.writeJSON(w, http.StatusOK, payload)
+	helpers.OK(w, payload)
+
 }
 
 func (h *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	var req types.VerifyOTPRequest
 	if err := helpers.ReadJSON(w, r, &req); err != nil {
-		h.errorJSON(w, errors.New("Invalid request"), http.StatusBadRequest)
+		helpers.Error(w, types.ErrInvalidRequest)
 		return
 	}
 
 	_, token, isNewUser, err := h.svc.ValidateOTP(r.Context(), req.Phone, req.Code)
 	if err != nil {
-		h.errorJSON(w, errors.New("Not authenticated"), http.StatusUnauthorized)
+		helpers.Error(w, types.ErrNotAuthenticated)
 		return
 	}
 
@@ -67,24 +67,6 @@ func (h *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		payload.Message = "Login successful"
 	}
 
-	h.writeJSON(w, http.StatusOK, payload)
+	helpers.OK(w, payload)
 
-}
-
-func (h *Auth) errorJSON(w http.ResponseWriter, err error, status int) {
-	if e := helpers.ErrorJSON(w, err, status); e != nil {
-		h.logger.Error(
-			"failed writing error json response",
-			"error", e,
-		)
-	}
-}
-
-func (h *Auth) writeJSON(w http.ResponseWriter, status int, data any) {
-	if e := helpers.WriteJSON(w, status, data); e != nil {
-		h.logger.Error(
-			"failed writing json response",
-			"error", e,
-		)
-	}
 }

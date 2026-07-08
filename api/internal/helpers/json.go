@@ -44,7 +44,7 @@ func ReadJSON(w http.ResponseWriter, r *http.Request, data any) error {
 //
 // Returns:
 // - error: An error if there was an issue writing the JSON response.
-func WriteJSON(w http.ResponseWriter, status int, data any, headers ...http.Header) error {
+func writeJSON(w http.ResponseWriter, status int, data any, headers ...http.Header) error {
 	out, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -65,24 +65,31 @@ func WriteJSON(w http.ResponseWriter, status int, data any, headers ...http.Head
 	return nil
 }
 
-// ErrorJSON writes an error response to the HTTP response writer.
-//
-// Parameters:
-// - w: The HTTP response writer to write the error response to.
-// - err: The error to be included in the error response.
-// - status: Optional status code to be included in the error response. If not provided, the default status code is http.StatusBadRequest.
-//
-// Returns:
-// - error: An error if there was an issue writing the error response.
-func ErrorJSON(w http.ResponseWriter, err error, status ...int) error {
-	statusCode := http.StatusBadRequest
-	if len(status) > 0 {
-		statusCode = status[0]
-	}
+func OK(w http.ResponseWriter, data any) error {
+	return writeJSON(w, http.StatusOK, types.Response{
+		Error: false,
+		Data:  data,
+	})
+}
 
-	var payload types.Response
-	payload.Error = true
-	payload.Message = err.Error()
+func Created(w http.ResponseWriter, data any) error {
+	return writeJSON(w, http.StatusCreated, types.Response{
+		Error: false,
+		Data:  data,
+	})
+}
 
-	return WriteJSON(w, statusCode, payload)
+func Message(w http.ResponseWriter, status int, message string) error {
+	return writeJSON(w, status, types.Response{
+		Error:   false,
+		Message: message,
+	})
+}
+
+func Error(w http.ResponseWriter, apiErr types.APIError) error {
+	return writeJSON(w, apiErr.Status, types.Response{
+		Error:   true,
+		Message: apiErr.Message,
+		Data:    apiErr.Code,
+	})
 }
