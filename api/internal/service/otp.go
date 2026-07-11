@@ -8,26 +8,28 @@ import (
 	"fmt"
 )
 
+type OTP interface {
+	GenerateOTP(ctx context.Context, phone string) (string, error)
+	ValidateOTP(ctx context.Context, phone, otp string) (bool, error)
+}
+
 type OTPStore interface {
 	SetOTP(ctx context.Context, phone, otp string) error
 	GetOTP(ctx context.Context, phone string) (string, error)
 	DelOTP(ctx context.Context, phone string) error
 }
 
-type OTP interface {
-	GenerateOTP(ctx context.Context, phone string) (string, error)
-	ValidateOTP(ctx context.Context, phone, otp string) (bool, error)
-}
-
-type RedisOTP struct {
+type otp struct {
 	store OTPStore
 }
 
-func NewRedisOTP(store OTPStore) *RedisOTP {
-	return &RedisOTP{store: store}
+func NewOTP(s OTPStore) OTP {
+	return &otp{
+		store: s,
+	}
 }
 
-func (s *RedisOTP) GenerateOTP(ctx context.Context, phone string) (string, error) {
+func (s *otp) GenerateOTP(ctx context.Context, phone string) (string, error) {
 	var b [4]byte
 	if _, err := rand.Read(b[:]); err != nil {
 		return "", err
@@ -38,7 +40,7 @@ func (s *RedisOTP) GenerateOTP(ctx context.Context, phone string) (string, error
 	return fmt.Sprintf("%06d", n), nil
 }
 
-func (s *RedisOTP) ValidateOTP(ctx context.Context, phone, otp string) (bool, error) {
+func (s *otp) ValidateOTP(ctx context.Context, phone, otp string) (bool, error) {
 	storedOTP, err := s.store.GetOTP(ctx, phone)
 	if err != nil {
 		return false, errors.New("Failed to retrieve OTP")

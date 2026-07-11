@@ -7,6 +7,7 @@ import (
 	"cafenetchi-api/internal/logger"
 	"cafenetchi-api/internal/redis"
 	"cafenetchi-api/internal/service"
+	"cafenetchi-api/internal/sms"
 	"context"
 	"net/http"
 	"os"
@@ -67,9 +68,9 @@ func main() {
 	limitStore := redis.NewRedisLimiter(rds, "opt", 5, time.Minute)
 
 	// services
-	otpSvc := service.NewRedisOTP(otpStore)
+	otpSvc := service.NewOTP(otpStore)
 
-	smsSvc := service.NewKavenegar(
+	smsSvc := sms.NewKavenegar(
 		cfg.KavenegarAPIKey,
 		cfg.KavenegarSender,
 	)

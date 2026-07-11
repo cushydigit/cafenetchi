@@ -9,13 +9,13 @@ import (
 )
 
 type Auth struct {
-	svc    *service.Auth
+	svc    service.Auth
 	logger *logger.Logger
 }
 
-func NewAuth(svc *service.Auth, l *logger.Logger) *Auth {
+func NewAuth(s service.Auth, l *logger.Logger) *Auth {
 	return &Auth{
-		svc:    svc,
+		svc:    s,
 		logger: l,
 	}
 }

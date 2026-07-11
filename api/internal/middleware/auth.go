@@ -11,7 +11,7 @@ import (
 type ContextKey string
 
 const (
-	UserID ContextKey = "user_id"
+	UserIDKey ContextKey = "user_id"
 )
 
 func Auth(secret string) func(next http.Handler) http.Handler {
@@ -24,7 +24,7 @@ func Auth(secret string) func(next http.Handler) http.Handler {
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), UserID, claims)
+			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
 
 			next.ServeHTTP(
 				w,
@@ -32,4 +32,12 @@ func Auth(secret string) func(next http.Handler) http.Handler {
 			)
 		})
 	}
+}
+
+func UserID(ctx context.Context) int64 {
+	id, ok := ctx.Value(UserIDKey).(int64)
+	if !ok {
+		return 0
+	}
+	return id
 }

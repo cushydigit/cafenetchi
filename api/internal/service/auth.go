@@ -3,6 +3,7 @@ package service
 import (
 	db "cafenetchi-api/internal/db/generated"
 	"cafenetchi-api/internal/logger"
+	"cafenetchi-api/internal/mapper"
 	"cafenetchi-api/internal/model"
 	"cafenetchi-api/internal/utils"
 	"context"
@@ -11,8 +12,13 @@ import (
 	"time"
 )
 
+type Auth interface {
+	SendOTP(ctx context.Context, phone string) error
+	ValidateOTP(ctx context.Context, phone, code string) (*model.User, string, bool, error)
+}
+
 // Auth or AuthService
-type Auth struct {
+type auth struct {
 	userQueries *db.Queries
 	otpSvc      OTP
 	smsSvc      SMS
@@ -20,18 +26,18 @@ type Auth struct {
 	logger      *logger.Logger
 }
 
-func NewAuth(userQueries *db.Queries, otpSvc OTP, smsSvc SMS, jwtSecret string, logger *logger.Logger) *Auth {
-	return &Auth{
-		userQueries: userQueries,
-		otpSvc:      otpSvc,
-		smsSvc:      smsSvc,
+func NewAuth(uq *db.Queries, o OTP, s SMS, jwtSecret string, l *logger.Logger) Auth {
+	return &auth{
+		userQueries: uq,
+		otpSvc:      o,
+		smsSvc:      s,
 		jwtSecret:   jwtSecret,
-		logger:      logger,
+		logger:      l,
 	}
 
 }
 
-func (s *Auth) SendOTP(ctx context.Context, phone string) error {
+func (s *auth) SendOTP(ctx context.Context, phone string) error {
 	// TODO: Business rule: Maybe check rate limiting here later
 	otpCode, err := s.otpSvc.GenerateOTP(ctx, phone)
 	if err != nil {
@@ -41,7 +47,7 @@ func (s *Auth) SendOTP(ctx context.Context, phone string) error {
 	return s.smsSvc.SendOTP(phone, otpCode)
 }
 
-func (s *Auth) ValidateOTP(ctx context.Context, phone, code string) (*model.User, string, bool, error) {
+func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*model.User, string, bool, error) {
 	// verify OTP
 	validated, err := s.otpSvc.ValidateOTP(ctx, phone, code)
 	if err != nil {
@@ -80,19 +86,6 @@ func (s *Auth) ValidateOTP(ctx context.Context, phone, code string) (*model.User
 		return nil, "", false, err
 	}
 
-	return convertUserModel(&user), token, isNewUser, nil
+	return mapper.DBUserToModel(&user), token, isNewUser, nil
 
-}
-
-func convertUserModel(user *db.User) *model.User {
-	return &model.User{
-		ID:         user.ID,
-		Phone:      user.Phone,
-		FullName:   user.FullName.String,
-		AvatarURL:  user.AvatarUrl.String,
-		IsVerified: user.IsVerified.Bool,
-		// Status:     user.Status.String,
-		CreatedAt: user.CreatedAt.Time,
-		UpdatedAt: user.UpdatedAt.Time,
-	}
 }
