@@ -2,21 +2,19 @@ package handler
 
 import (
 	"cafenetchi-api/internal/helpers"
-	"cafenetchi-api/internal/logger"
 	"cafenetchi-api/internal/service"
 	"cafenetchi-api/internal/types"
+	"cafenetchi-api/internal/validation"
 	"net/http"
 )
 
 type Auth struct {
-	svc    service.Auth
-	logger *logger.Logger
+	svc service.Auth
 }
 
-func NewAuth(s service.Auth, l *logger.Logger) *Auth {
+func NewAuth(s service.Auth) *Auth {
 	return &Auth{
-		svc:    s,
-		logger: l,
+		svc: s,
 	}
 }
 
@@ -27,15 +25,20 @@ func (h *Auth) SendOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: maybe require a middlewares for phone validation format
-	if err := h.svc.SendOTP(r.Context(), req.Phone); err != nil {
-		helpers.Error(w, types.ErrInternalServer)
+	phone, err := validation.ValidateSendOTP(req)
+	if err != nil {
+		helpers.Error(w, err)
+		return
+	}
+
+	if err := h.svc.SendOTP(r.Context(), phone); err != nil {
+		helpers.Error(w, err)
 		return
 	}
 
 	payload := types.Response{
 		Error:   false,
-		Message: "OPT send successfully",
+		Message: "OTP send successfully",
 	}
 
 	helpers.OK(w, payload)
@@ -49,24 +52,25 @@ func (h *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, token, isNewUser, err := h.svc.ValidateOTP(r.Context(), req.Phone, req.Code)
+	phone, code, err := validation.ValidateVerifyOTP(req)
 	if err != nil {
-		helpers.Error(w, types.ErrNotAuthenticated)
+		helpers.Error(w, err)
 		return
 	}
 
-	payload := types.Response{
-		Message: "Authentication Succeed!",
-		Error:   false,
-		Data:    token,
+	result, err := h.svc.ValidateOTP(r.Context(), phone, code)
+	if err != nil {
+		helpers.Error(w, err)
+		return
 	}
 
-	if isNewUser {
-		payload.Message = "Account created successfully"
-	} else {
-		payload.Message = "Login successful"
+	status := http.StatusOK
+	message := "Login successful"
+
+	if result.IsNewUser {
+		status = http.StatusCreated
+		message = "Account created successfully"
 	}
 
-	helpers.OK(w, payload)
-
+	helpers.Message(w, status, message)
 }

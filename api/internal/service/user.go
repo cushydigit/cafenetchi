@@ -1,50 +1,42 @@
 package service
 
 import (
-	db "cafenetchi-api/internal/db/generated"
 	"cafenetchi-api/internal/logger"
-	"cafenetchi-api/internal/mapper"
 	"cafenetchi-api/internal/model"
-	"cafenetchi-api/internal/types"
+	"cafenetchi-api/internal/repository"
 	"context"
 )
 
 // TODO: change req type to input for service layer?
 type User interface {
 	GetByID(ctx context.Context, id int64) (*model.User, error)
-	UpdateProfile(ctx context.Context, id int64, req types.UpdateProfileRequest) error
+	UpdateProfile(ctx context.Context, id int64, data model.UpdateUser) (*model.User, error)
 }
 
 type user struct {
-	logger  *logger.Logger
-	queries *db.Queries
+	userRepo repository.User
+	logger   *logger.Logger
 }
 
-func NewUser(l *logger.Logger, q *db.Queries) User {
-	u := &user{
-		logger:  l,
-		queries: q,
+func NewUser(r repository.User, l *logger.Logger) User {
+	return &user{
+		userRepo: r,
+		logger:   l,
 	}
-	return u
 }
 
 func (s *user) GetByID(ctx context.Context, id int64) (*model.User, error) {
-	u, err := s.queries.GetUserByID(ctx, id)
+	u, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-
-	return mapper.DBUserToModel(&u), nil
-
+	return u, nil
 }
 
-func (s *user) UpdateProfile(ctx context.Context, id int64, req types.UpdateProfileRequest) error {
-
-	s.queries.UpdateUser(ctx, db.UpdateUserParams{
-		ID:        id,
-		FullName:  mapper.StringToPgText(req.FullName),
-		AvatarUrl: mapper.StringToPgText(req.Avatar),
-	})
-	return nil
-
+func (s *user) UpdateProfile(ctx context.Context, id int64, data model.UpdateUser) (*model.User, error) {
+	u, err := s.userRepo.Update(ctx, id, data)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
 }

@@ -1,68 +1,50 @@
 package redis
 
 import (
+	"cafenetchi-api/internal/otp"
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	rds "github.com/redis/go-redis/v9"
 )
 
-const (
-	OTP_TTL = 2 * time.Minute
-)
-
-type OTPStore struct {
+type RedisOTPStore struct {
 	client *Client
+	ttl    time.Duration
 }
 
-func NewOTPStore(client *Client) *OTPStore {
-	return &OTPStore{client: client}
+func NewOTPStore(client *Client, ttl time.Duration) *RedisOTPStore {
+	return &RedisOTPStore{
+		client: client,
+		ttl:    ttl,
+	}
 }
 
 // otpKey generates a key for storing OTPs in Redis.
-//
-// Parameters:
-// - phone: The phone number associated with the OTP.
-//
-// Return:
-// - string: The generated OTP key.
 func otpKey(phone string) string {
 	return fmt.Sprintf("otp:%s", phone)
 }
 
 // SetOTP sets the OTP for a given phone number in Redis.
-//
-// Parameters:
-// - ctx: The context.Context object for the function.
-// - phone: The phone number to set the OTP for.
-// - otp: The OTP to set for the phone number.
-//
-// Return:
-// - error: An error if there was a problem setting the OTP.
-func (c *OTPStore) SetOTP(ctx context.Context, phone, otp string) error {
-	return c.client.rdsClient.Set(ctx, otpKey(phone), otp, OTP_TTL).Err()
+func (c *RedisOTPStore) Set(ctx context.Context, phone, otp string) error {
+	return c.client.rdsClient.Set(ctx, otpKey(phone), otp, c.ttl).Err()
 }
 
 // GetOTP retrieves the OTP (One-Time Password) associated with a given phone number from Redis.
-//
-// Parameters:
-// - ctx: The context.Context object for the function.
-// - phone: The phone number to retrieve the OTP for.
-//
-// Returns:
-// - string: The OTP associated with the phone number.
-// - error: An error if there was a problem retrieving the OTP.
-func (c *OTPStore) GetOTP(ctx context.Context, phone string) (string, error) {
-	return c.client.rdsClient.Get(ctx, otpKey(phone)).Result()
+func (c *RedisOTPStore) Get(ctx context.Context, phone string) (string, error) {
+	code, err := c.client.rdsClient.Get(ctx, otpKey(phone)).Result()
+	if err != nil {
+		if errors.Is(err, rds.Nil) {
+			return "", otp.ErrNotFound
+		}
+		return "", err
+	}
+	return code, nil
 }
 
 // DeleteOTP deletes the OTP (One-Time Password) associated with a given phone number from Redis.
-//
-// Parameters:
-// - ctx: The context.Context object for the function.
-// - phone: The phone number to delete the OTP for.
-//
-// Returns:
-// - error: An error if there was a problem deleting the OTP.
-func (c *OTPStore) DelOTP(ctx context.Context, phone string) error {
+func (c *RedisOTPStore) Del(ctx context.Context, phone string) error {
 	return c.client.rdsClient.Del(ctx, otpKey(phone)).Err()
 }

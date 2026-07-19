@@ -5,7 +5,9 @@ import (
 	db "cafenetchi-api/internal/db/generated"
 	"cafenetchi-api/internal/handler"
 	"cafenetchi-api/internal/logger"
+	"cafenetchi-api/internal/otp"
 	"cafenetchi-api/internal/redis"
+	"cafenetchi-api/internal/repository"
 	"cafenetchi-api/internal/service"
 	"cafenetchi-api/internal/sms"
 	"context"
@@ -63,12 +65,15 @@ func main() {
 	}
 	defer rds.Close(appCtx)
 
+	// Repositories
+	userRepo := repository.NewUser(queries)
+
 	// OTP store
-	otpStore := redis.NewOTPStore(rds)
-	limitStore := redis.NewRedisLimiter(rds, "opt", 5, time.Minute)
+	otpStore := redis.NewOTPStore(rds, 2*time.Minute)
+	limitStore := redis.NewRedisLimiter(rds, "otp", 5, time.Minute)
 
 	// services
-	otpSvc := service.NewOTP(otpStore)
+	otpSvc := otp.New(otpStore)
 
 	smsSvc := sms.NewKavenegar(
 		cfg.KavenegarAPIKey,
@@ -76,23 +81,34 @@ func main() {
 	)
 
 	authService := service.NewAuth(
-		queries,
+		userRepo,
 		otpSvc,
 		smsSvc,
 		cfg.JWTSecret,
 		appLogger,
 	)
 
+	userService := service.NewUser(
+		userRepo,
+		appLogger,
+	)
+
+	// Handlers
 	authHandler := handler.NewAuth(
 		authService,
+	)
+
+	userHandler := handler.NewUser(
+		userService,
 		appLogger,
 	)
 
 	// router
 	router := Routes(
 		authHandler,
+		userHandler,
 		limitStore,
-		appLogger,
+		cfg.JWTSecret,
 	)
 
 	// server

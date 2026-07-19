@@ -1,91 +1,151 @@
 package service
 
 import (
-	db "cafenetchi-api/internal/db/generated"
 	"cafenetchi-api/internal/logger"
-	"cafenetchi-api/internal/mapper"
 	"cafenetchi-api/internal/model"
+	"cafenetchi-api/internal/otp"
+	"cafenetchi-api/internal/repository"
+	"cafenetchi-api/internal/sms"
+	"cafenetchi-api/internal/types"
 	"cafenetchi-api/internal/utils"
 	"context"
-	"database/sql"
 	"errors"
 	"time"
 )
 
 type Auth interface {
 	SendOTP(ctx context.Context, phone string) error
-	ValidateOTP(ctx context.Context, phone, code string) (*model.User, string, bool, error)
+	ValidateOTP(ctx context.Context, phone, code string) (*AuthResult, error)
+}
+
+type AuthResult struct {
+	User      *model.User
+	Token     string
+	IsNewUser bool
 }
 
 // Auth or AuthService
 type auth struct {
-	userQueries *db.Queries
-	otpSvc      OTP
-	smsSvc      SMS
-	jwtSecret   string
-	logger      *logger.Logger
+	userRepo  repository.User
+	otpSvc    otp.Service
+	smsSvc    sms.Service
+	jwtSecret string
+	logger    *logger.Logger
 }
 
-func NewAuth(uq *db.Queries, o OTP, s SMS, jwtSecret string, l *logger.Logger) Auth {
+func NewAuth(ur repository.User, o otp.Service, s sms.Service, jwtSecret string, l *logger.Logger) Auth {
 	return &auth{
-		userQueries: uq,
-		otpSvc:      o,
-		smsSvc:      s,
-		jwtSecret:   jwtSecret,
-		logger:      l,
+		userRepo:  ur,
+		otpSvc:    o,
+		smsSvc:    s,
+		jwtSecret: jwtSecret,
+		logger:    l,
 	}
 
 }
 
 func (s *auth) SendOTP(ctx context.Context, phone string) error {
 	// TODO: Business rule: Maybe check rate limiting here later
-	otpCode, err := s.otpSvc.GenerateOTP(ctx, phone)
+	code, err := s.otpSvc.Generate(ctx, phone)
 	if err != nil {
-		return err
+		s.logger.Error(
+			"failed to generate otp",
+			"phone", phone,
+			"error", err,
+		)
+		return types.ErrInternalServer
 	}
 
-	return s.smsSvc.SendOTP(phone, otpCode)
+	if err := s.smsSvc.Send(phone, code); err != nil {
+		s.logger.Error(
+			"failed to send otp",
+			"phone", phone,
+			"error", err,
+		)
+		return types.ErrInternalServer
+	}
+
+	return nil
+
 }
 
-func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*model.User, string, bool, error) {
+func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*AuthResult, error) {
 	// verify OTP
-	validated, err := s.otpSvc.ValidateOTP(ctx, phone, code)
-	if err != nil {
-		return nil, "", false, err
-	}
-	if !validated {
-		return nil, "", false, errors.New("invalid otp code")
-	}
-	// TODO: Find or Create User
-	var isNewUser bool
-	var user db.User
-	user, err = s.userQueries.GetUserByPhone(ctx, phone)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, "", false, err
+	if err := s.otpSvc.Validate(ctx, phone, code); err != nil {
+		switch {
+		case errors.Is(err, otp.ErrInvalid):
+			return nil, types.ErrInvalidOTP
+		case errors.Is(err, otp.ErrNotFound):
+			return nil, types.ErrInvalidOTP
+		default:
+			s.logger.Error(
+				"otp validation failed",
+				"phone", phone,
+				"error", err,
+			)
 		}
+		return nil, types.ErrInternalServer
+	}
+
+	var (
+		user      *model.User
+		isNewUser bool
+		err       error
+	)
+
+	user, err = s.userRepo.GetByPhone(ctx, phone)
+	switch {
+	case err == nil:
+		//existing user
+	case errors.Is(err, repository.ErrUserNotFound):
 		// user doesn't exist
-		user, err = s.userQueries.CreateUser(ctx, db.CreateUserParams{
-			Phone: phone,
-		})
-
+		user, err = s.userRepo.Create(ctx, phone)
 		if err != nil {
-			return nil, "", false, err
+			return nil, err
 		}
-		isNewUser = true
-	}
 
+		isNewUser = true
+
+		s.logger.Info(
+			"user registered",
+			"user_id", user.ID,
+			"phone", user.Phone,
+		)
+
+	default:
+		s.logger.Error(
+			"failed to get user",
+			"phone", phone,
+			"error", err,
+		)
+		return nil, types.ErrInternalServer
+	}
 	token, err := utils.GenerateJWT(
 		user.ID,
 		user.Phone,
-		"user",
+		string(model.RoleCustomer),
 		s.jwtSecret,
-		time.Second*3600*24,
+		time.Hour*24,
 	)
 	if err != nil {
-		return nil, "", false, err
+		s.logger.Error(
+			"failed to generate jwt",
+			"user_id", user.ID,
+			"error", err,
+		)
+		return nil, types.ErrInternalServer
 	}
 
-	return mapper.DBUserToModel(&user), token, isNewUser, nil
+	s.logger.Info(
+		"user authenticated",
+		"user_id", user.ID,
+		"is_new", isNewUser,
+	)
+
+	return &AuthResult{
+		User:      user,
+		Token:     token,
+		IsNewUser: isNewUser,
+	}, nil
 
 }

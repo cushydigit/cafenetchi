@@ -20,7 +20,7 @@ func Auth(secret string) func(next http.Handler) http.Handler {
 			token := r.Header.Get("Authorization")
 			claims, err := utils.ParseJWT(token, secret)
 			if err != nil {
-				helpers.Error(w, types.ErrInvalidOTP)
+				helpers.Error(w, types.ErrNotAuthenticated)
 				return
 			}
 

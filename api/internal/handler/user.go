@@ -4,8 +4,11 @@ import (
 	"cafenetchi-api/internal/helpers"
 	"cafenetchi-api/internal/logger"
 	"cafenetchi-api/internal/middleware"
+	"cafenetchi-api/internal/model"
+	"cafenetchi-api/internal/repository"
 	"cafenetchi-api/internal/service"
 	"cafenetchi-api/internal/types"
+	"errors"
 	"net/http"
 )
 
@@ -24,9 +27,11 @@ func NewUser(s service.User, l *logger.Logger) *User {
 func (h *User) Me(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserID(r.Context())
 	u, err := h.svc.GetByID(r.Context(), userID)
-	if err != nil {
-		helpers.Error(w, types.ErrNotFound)
-		return
+	switch {
+	case errors.Is(err, repository.ErrUserNotFound):
+		helpers.Error(w, types.ErrUserNotFound)
+	default:
+		helpers.Error(w, types.ErrInternalServer)
 	}
 
 	helpers.OK(w, u)
@@ -40,8 +45,12 @@ func (h *User) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := middleware.UserID(r.Context())
-	if err := h.svc.UpdateProfile(r.Context(), id, req); err != nil {
+	userID := middleware.UserID(r.Context())
+	_, err := h.svc.UpdateProfile(r.Context(), userID, model.UpdateUser{
+		FullName:  req.FullName,
+		AvatarURL: req.Avatar,
+	})
+	if err != nil {
 		helpers.Error(w, types.ErrInternalServer)
 		return
 	}

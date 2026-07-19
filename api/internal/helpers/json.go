@@ -34,7 +34,7 @@ func ReadJSON(w http.ResponseWriter, r *http.Request, data any) error {
 	return nil
 }
 
-// WriteJSON writes a JSON response to the HTTP response writer.
+// writeJSON writes a JSON response to the HTTP response writer.
 //
 // Parameters:
 // - w: The HTTP response writer to write the JSON response to.
@@ -86,10 +86,13 @@ func Message(w http.ResponseWriter, status int, message string) error {
 	})
 }
 
-func Error(w http.ResponseWriter, apiErr types.APIError) error {
+func Error(w http.ResponseWriter, err error) error {
+	apiErr, ok := err.(types.APIError)
+	if !ok {
+		apiErr = types.ErrInternalServer
+	}
 	return writeJSON(w, apiErr.Status, types.Response{
 		Error:   true,
 		Message: apiErr.Message,
-		Data:    apiErr.Code,
 	})
 }

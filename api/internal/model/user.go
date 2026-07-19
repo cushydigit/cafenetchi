@@ -31,6 +31,11 @@ type User struct {
 	UpdatedAt time.Time
 }
 
+type UpdateUser struct {
+	FullName  string
+	AvatarURL string
+}
+
 type UserProfile struct {
 	ID     int64
 	UserID int64

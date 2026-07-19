@@ -1,27 +1,31 @@
 package sms
 
 import (
-	"cafenetchi-api/internal/service"
 	"fmt"
 
-	"github.com/kavenegar/kavenegar-go"
+	kvn "github.com/kavenegar/kavenegar-go"
 )
 
-type Kavenegar struct {
-	client *kavenegar.Kavenegar
+type Service interface {
+	Send(phone, otp string) error
+	SendCustom(phone, message string) error
+}
+
+type kavenegar struct {
+	client *kvn.Kavenegar
 	sender string
 }
 
 // implements SMS service
-func NewKavenegar(apiKey, sender string) service.SMS {
-	return &Kavenegar{
-		client: kavenegar.New(apiKey),
+func NewKavenegar(apiKey, sender string) Service {
+	return &kavenegar{
+		client: kvn.New(apiKey),
 		sender: sender,
 	}
 }
 
-func (s *Kavenegar) SendOTP(phone, otp string) error {
-	message := fmt.Sprintf("کد ورود شما به کافه نت: %s\n\nاین کد فقط ۲ دقیقه معتبر است.", otp)
+func (s *kavenegar) Send(phone, code string) error {
+	message := fmt.Sprintf("کد ورود شما به کافه نت: %s\n\nاین کد فقط ۲ دقیقه معتبر است.", code)
 
 	_, err := s.client.Message.Send(s.sender, []string{phone}, message, nil)
 	if err != nil {
@@ -30,7 +34,7 @@ func (s *Kavenegar) SendOTP(phone, otp string) error {
 	return nil
 }
 
-func (s *Kavenegar) SendCustom(phone, message string) error {
+func (s *kavenegar) SendCustom(phone, message string) error {
 	_, err := s.client.Message.Send(s.sender, []string{phone}, message, nil)
 	return err
 }
