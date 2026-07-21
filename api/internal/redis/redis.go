@@ -30,6 +30,6 @@ func New(ctx context.Context, addr, pass string, db int) (*Client, error) {
 	return &Client{rdsClient: client}, nil
 }
 
-func (c *Client) Close(ctx context.Context) error {
-	return c.Close(ctx)
+func (c *Client) Close() error {
+	return c.rdsClient.Close()
 }

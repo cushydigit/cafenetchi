@@ -99,6 +99,7 @@ func getEnv(key, defaultValue string, l *logger.Logger) string {
 	}
 	l.Warn(
 		"Environment variable not set",
+		"key",
 		key,
 	)
 	return defaultValue

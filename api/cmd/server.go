@@ -63,7 +63,7 @@ func main() {
 		)
 		return
 	}
-	defer rds.Close(appCtx)
+	defer rds.Close()
 
 	// Repositories
 	userRepo := repository.NewUser(queries)
