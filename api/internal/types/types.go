@@ -17,6 +17,7 @@ type UpdateProfileRequest struct {
 type Response struct {
 	Error   bool   `json:"error"`
 	Message string `json:"message"`
+	Code    int    `json:"code"`
 	Data    any    `json:"data,omitempty"`
 }
 
