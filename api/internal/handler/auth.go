@@ -72,5 +72,10 @@ func (h *Auth) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		message = "Account created successfully"
 	}
 
-	helpers.Message(w, status, message)
+	// TODO: return access token
+	_ = helpers.WriteJSON(w, status, types.Response{
+		Message: message,
+		Data:    result,
+	})
+
 }

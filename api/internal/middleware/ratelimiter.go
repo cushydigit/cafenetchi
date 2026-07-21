@@ -19,13 +19,13 @@ func RateLimit(limiter limiter.Limiter) func(http.Handler) http.Handler {
 			key := r.RemoteAddr
 			allowed, retryAfter, err := limiter.Allow(ctx, key)
 			if err != nil {
-				_ = helpers.Error(w, types.ErrInternalServer)
+				helpers.Error(w, types.ErrInternalServer)
 				return
 			}
 
 			if !allowed {
 				w.Header().Set("Retry-After", strconv.FormatInt(int64(retryAfter.Seconds()), 10))
-				_ = helpers.Error(w, types.ErrTooManyRequest)
+				helpers.Error(w, types.ErrTooManyRequest)
 				return
 			}
 
