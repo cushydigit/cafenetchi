@@ -8,15 +8,9 @@ import (
 	"net/http"
 )
 
-// ReadJSON reads JSON data from an HTTP request body and decodes it into the provided data structure.
+// ReadJSON decodes a JSON request body into data.
 //
-// Parameters:
-// - w: The HTTP response writer to write any error responses to.
-// - r: The HTTP request containing the JSON data to be read.
-// - data: The data structure to decode the JSON data into.
-//
-// Returns:
-// - error: An error if there was an issue reading or decoding the JSON data.
+// The request body is limited to 1 MiB. it reject empty bodies and multiple JSON values.
 func ReadJSON(w http.ResponseWriter, r *http.Request, data any) error {
 	maxBytes := 1024 * 1024 // one megabyte
 
@@ -24,27 +18,35 @@ func ReadJSON(w http.ResponseWriter, r *http.Request, data any) error {
 
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(data); err != nil {
-		return err
+		var syntaxError *json.SyntaxError
+		var unmarshalTypeError *json.UnmarshalTypeError
+		var httpMaxByteError *http.MaxBytesError
+		switch {
+		case errors.Is(err, io.EOF):
+			return types.ErrInvalidRequest
+		case errors.Is(err, io.ErrUnexpectedEOF):
+			return types.ErrInvalidRequest
+		case errors.As(err, &httpMaxByteError):
+			return types.ErrInvalidRequest
+		case errors.As(err, &syntaxError):
+			return types.ErrInvalidRequest
+		case errors.As(err, &unmarshalTypeError):
+			return types.ErrInvalidRequest
+		default:
+			return types.ErrInvalidRequest
+		}
 	}
 
 	if err := dec.Decode(&struct{}{}); err != io.EOF {
-		return errors.New("body must have only a single JSON value")
+		return types.ErrInvalidRequest
 	}
 
 	return nil
 }
 
-// writeJSON writes a JSON response to the HTTP response writer.
-//
-// Parameters:
-// - w: The HTTP response writer to write the JSON response to.
-// - status: The HTTP status code to set in the response.
-// - data: The data to be marshaled into JSON.
-// - headers: Optional custom headers to be included in the response.
-//
-// Returns:
-// - error: An error if there was an issue writing the JSON response.
-func writeJSON(w http.ResponseWriter, status int, data any, headers ...http.Header) error {
+// WriteJSON marshals data as JSON and writes it to the response i
+// with provided HTTP status code.
+func WriteJSON(w http.ResponseWriter, status int, data any, headers ...http.Header) error {
 	out, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -65,34 +67,41 @@ func writeJSON(w http.ResponseWriter, status int, data any, headers ...http.Head
 	return nil
 }
 
-func OK(w http.ResponseWriter, data any) error {
-	return writeJSON(w, http.StatusOK, types.Response{
-		Error: false,
-		Data:  data,
+// Ok writes a 200 OK JSON response.
+func OK(w http.ResponseWriter, data any) {
+	_ = WriteJSON(w, http.StatusOK, types.Response{
+		Data: data,
+		Code: http.StatusOK,
 	})
 }
 
-func Created(w http.ResponseWriter, data any) error {
-	return writeJSON(w, http.StatusCreated, types.Response{
-		Error: false,
-		Data:  data,
+// Created writes a 201 Created JSON response
+func Created(w http.ResponseWriter, data any) {
+	_ = WriteJSON(w, http.StatusCreated, types.Response{
+		Data: data,
+		Code: http.StatusCreated,
 	})
 }
 
-func Message(w http.ResponseWriter, status int, message string) error {
-	return writeJSON(w, status, types.Response{
-		Error:   false,
+// Message writes a JSON response containing only a message.
+func Message(w http.ResponseWriter, status int, message string) {
+	_ = WriteJSON(w, status, types.Response{
 		Message: message,
+		Code:    status,
 	})
 }
 
-func Error(w http.ResponseWriter, err error) error {
-	apiErr, ok := err.(types.APIError)
-	if !ok {
+// Error writes a API error response.
+//
+// if err is not an APIError, an Internal Server Error is returned.
+func Error(w http.ResponseWriter, err error) {
+	var apiErr types.APIError
+	if !errors.As(err, &apiErr) {
 		apiErr = types.ErrInternalServer
 	}
-	return writeJSON(w, apiErr.Status, types.Response{
+	_ = WriteJSON(w, apiErr.Status, types.Response{
 		Error:   true,
 		Message: apiErr.Message,
+		Code:    apiErr.Status,
 	})
 }
