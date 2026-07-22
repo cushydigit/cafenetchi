@@ -46,6 +46,12 @@ func NewAuth(ur repository.User, o otp.Service, s sms.Service, jwtSecret string,
 
 func (s *auth) SendOTP(ctx context.Context, phone string) error {
 	// TODO: Business rule: Maybe check rate limiting here later
+
+	// the validation check on the handler but the auth service
+	// is application service so we are to protect it.
+	if phone == "" {
+		return types.ErrPhoneRequired
+	}
 	code, err := s.otpSvc.Generate(ctx, phone)
 	if err != nil {
 		s.logger.Error(
@@ -94,14 +100,22 @@ func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*AuthResult
 	)
 
 	user, err = s.userRepo.GetByPhone(ctx, phone)
-	switch {
-	case err == nil:
-		//existing user
-	case errors.Is(err, repository.ErrUserNotFound):
-		// user doesn't exist
+
+	if err == nil {
+		// existing user
+	} else if errors.Is(err, repository.ErrUserNotFound) {
+
 		user, err = s.userRepo.Create(ctx, phone)
 		if err != nil {
-			return nil, err
+			s.logger.Error(
+				"failed to create user",
+				"phone",
+				phone,
+				"error",
+				err,
+			)
+
+			return nil, types.ErrInternalServer
 		}
 
 		isNewUser = true
@@ -109,17 +123,18 @@ func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*AuthResult
 		s.logger.Info(
 			"user registered",
 			"user_id", user.ID,
-			"phone", user.Phone,
 		)
 
-	default:
+	} else {
 		s.logger.Error(
 			"failed to get user",
 			"phone", phone,
 			"error", err,
 		)
+
 		return nil, types.ErrInternalServer
 	}
+
 	token, err := utils.GenerateJWT(
 		user.ID,
 		user.Phone,
