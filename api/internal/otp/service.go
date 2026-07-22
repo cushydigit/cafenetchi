@@ -12,6 +12,7 @@ import (
 type Service interface {
 	Generate(ctx context.Context, phone string) (string, error)
 	Validate(ctx context.Context, phone, code string) error
+	Consume(ctx context.Context, phone string) error
 }
 
 type service struct {
@@ -32,34 +33,36 @@ func New(s Store) Service {
 func (s *service) Generate(ctx context.Context, phone string) (string, error) {
 	var b [4]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		return "", fmt.Errorf("generate otp: %w", err)
+		return "", fmt.Errorf("generation otp: %w", err)
 	}
 
 	code := fmt.Sprintf("%06d", binary.BigEndian.Uint32(b[:])%1000000)
 
 	if err := s.store.Set(ctx, phone, code); err != nil {
-		return "", fmt.Errorf("set otp: %w", err)
+		return "", fmt.Errorf("%w: %w", ErrStoreSet, err)
 	}
 	return code, nil
 }
 
 // Validate verifies the provided OTP against the stored value.
-//
-// On successful validation, the stored OTP is deleted so it cannot be used again.
-func (s *service) Validate(ctx context.Context, phone, otp string) error {
+func (s *service) Validate(ctx context.Context, phone, code string) error {
 	storedOTP, err := s.store.Get(ctx, phone)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return ErrNotFound
 		}
-		return fmt.Errorf("get otp: %w", err)
+		return fmt.Errorf("%w: %w", ErrStoreGet, err)
 	}
-	if storedOTP != otp {
+	if storedOTP != code {
 		return ErrInvalid
 	}
+	return nil
+}
 
+// Consume will delete stored OTP and cannot be used again.
+func (s *service) Consume(ctx context.Context, phone string) error {
 	if err := s.store.Del(ctx, phone); err != nil {
-		return fmt.Errorf("delete otp: %w", err)
+		return fmt.Errorf("%w: %w", ErrStoreDel, err)
 	}
 	return nil
 }
