@@ -35,6 +35,37 @@ func TestGenerateStoreError(t *testing.T) {
 	}
 }
 
+// test get error
+func TestGetStoreError(t *testing.T) {
+	store := newFakeStore()
+	store.getErr = errors.New("redis down")
+	phone := "09123456789"
+	code := "123456"
+	s := New(store)
+
+	err := s.Validate(context.Background(), phone, code)
+	if !errors.Is(err, ErrStoreGet) {
+		t.Fatal("expected ErrStoreGet")
+	}
+}
+
+// test del error
+func TestDelStoreError(t *testing.T) {
+	store := newFakeStore()
+	store.delErr = errors.New("redis down")
+	phone := "09123456789"
+	code := "123456"
+	store.values[phone] = code
+
+	s := New(store)
+
+	err := s.Consume(context.Background(), phone)
+	if !errors.Is(err, ErrStoreDel) {
+		t.Fatal("expected ErrStoreDel")
+	}
+
+}
+
 // validate success
 func TestValidateSuccess(t *testing.T) {
 	store := newFakeStore()
