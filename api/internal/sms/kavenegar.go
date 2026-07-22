@@ -26,15 +26,16 @@ func NewKavenegar(apiKey, sender string) Service {
 
 func (s *kavenegar) Send(phone, code string) error {
 	message := fmt.Sprintf("کد ورود شما به کافه نت: %s\n\nاین کد فقط ۲ دقیقه معتبر است.", code)
-
-	_, err := s.client.Message.Send(s.sender, []string{phone}, message, nil)
-	if err != nil {
-		return fmt.Errorf("failed to send SMS: %w", err)
-	}
-	return nil
+	return s.send(phone, message)
 }
 
 func (s *kavenegar) SendCustom(phone, message string) error {
-	_, err := s.client.Message.Send(s.sender, []string{phone}, message, nil)
-	return err
+	return s.send(phone, message)
+}
+
+func (s *kavenegar) send(phone, message string) error {
+	if _, err := s.client.Message.Send(s.sender, []string{phone}, message, nil); err != nil {
+		return fmt.Errorf("%w: %v", ErrSend, err)
+	}
+	return nil
 }
