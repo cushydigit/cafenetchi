@@ -157,6 +157,17 @@ func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*AuthResult
 		"is_new", isNewUser,
 	)
 
+	// consume or delete OTP
+	if err := s.otpSvc.Consume(ctx, phone); err != nil {
+		s.logger.Error(
+			"otp error delete",
+			"phone", phone,
+			"error", err,
+		)
+		return nil, types.ErrInternalServer
+
+	}
+
 	return &AuthResult{
 		User:      user,
 		Token:     token,
