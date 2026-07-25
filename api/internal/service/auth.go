@@ -10,6 +10,7 @@ import (
 	"cafenetchi-api/internal/utils"
 	"context"
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -49,7 +50,7 @@ func (s *auth) SendOTP(ctx context.Context, phone string) error {
 
 	// the validation check on the handler but the auth service
 	// is application service so we are to protect it.
-	if phone == "" {
+	if strings.TrimSpace(phone) == "" {
 		return types.ErrPhoneRequired
 	}
 	code, err := s.otpSvc.Generate(ctx, phone)

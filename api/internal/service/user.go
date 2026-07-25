@@ -26,7 +26,7 @@ func NewUser(r repository.User, l *logger.Logger) User {
 }
 
 func (s *user) GetByID(ctx context.Context, id int64) (*model.User, error) {
-	u, err := s.userRepo.GetByID(ctx, id)
+	u, err := s.userRepo.Get(ctx, id)
 	if err != nil {
 		return nil, err
 	}
