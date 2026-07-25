@@ -13,12 +13,9 @@ import (
 )
 
 type User interface {
-	// GetByID returns the user with given ID.
+	// Get returns the user with given ID.
 	// Returns ErrUserNotFound if no matching user exits.
-	GetByID(ctx context.Context, id int64) (*model.User, error)
-	// GetBeyPhone return the user with given ID.
-	// Returns ErrUserNotFound if not matching user exits.
-	GetByPhone(ctx context.Context, phone string) (*model.User, error)
+	Get(ctx context.Context, id int64) (*model.User, error)
 
 	// Create creates a new user using given phone number.
 	// Returns ErrPhoneAlreadyExists if matching phone already exists.
@@ -27,6 +24,10 @@ type User interface {
 	// Update update the user with given id and data
 	// Returns updated user
 	Update(ctx context.Context, id int64, data model.UpdateUser) (*model.User, error)
+
+	// GetByPhone return the user with given ID.
+	// Returns ErrUserNotFound if not matching user exits.
+	GetByPhone(ctx context.Context, phone string) (*model.User, error)
 }
 
 type user struct {
@@ -37,12 +38,13 @@ func NewUser(q *db.Queries) User {
 	return &user{queries: q}
 }
 
-func (r *user) GetByID(ctx context.Context, id int64) (*model.User, error) {
+func (r *user) Get(ctx context.Context, id int64) (*model.User, error) {
 	u, err := r.queries.GetUserByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
+		return nil, err
 	}
 	return mapper.DBUserToModel(&u), nil
 }
