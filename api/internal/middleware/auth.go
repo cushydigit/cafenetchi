@@ -6,6 +6,7 @@ import (
 	"cafenetchi-api/internal/utils"
 	"context"
 	"net/http"
+	"strings"
 )
 
 type ContextKey string
@@ -17,7 +18,13 @@ const (
 func Auth(secret string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := r.Header.Get("Authorization")
+			auth := r.Header.Get("Authorization")
+			if !strings.HasPrefix(auth, "Bearer ") {
+				helpers.Error(w, types.ErrNotAuthenticated)
+				return
+			}
+
+			token := strings.TrimPrefix(auth, "Bearer ")
 			claims, err := utils.ParseJWT(token, secret)
 			if err != nil {
 				helpers.Error(w, types.ErrNotAuthenticated)

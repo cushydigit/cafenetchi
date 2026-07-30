@@ -14,7 +14,7 @@ func RateLimit(limiter limiter.Limiter) func(http.Handler) http.Handler {
 			ctx := r.Context()
 
 			// TODO: Better key generation.
-			// For now use the client IP. For OTP you may later use:
+			// For now use the client IP. For OTP may later use:
 			// ip + ":" + phone
 			key := r.RemoteAddr
 			allowed, retryAfter, err := limiter.Allow(ctx, key)
