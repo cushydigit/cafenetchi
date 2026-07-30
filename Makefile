@@ -44,8 +44,12 @@ test:
 	cd api && go test ./... -v
 
 test-coverage:
-	@cd ./api && go test ./... -coverprofile=coverage.out
-	@cd ./api && go tool cover -html=coverage.out
+	@echo "Generating coverage report..."
+	@$(call load_env, $(TEST_ENV)) && \
+	cd ./api && go test ./... -coverprofile=coverage.out
+	@echo "Opening coverage report..."
+	@$(call load_env, $(TEST_ENV)) && \
+	cd ./api && go tool cover -html=coverage.out
 
 test-db-shell:
 	@echo "Connecting to database..."

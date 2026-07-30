@@ -51,6 +51,10 @@ func Load(l *logger.Logger) *Config {
 			)
 		}
 	}
+	l.Info(
+		"app running on environment",
+		"env", appEnv,
+	)
 
 	return &Config{
 		AppEnv:    appEnv,
