@@ -1,61 +1,95 @@
-include configs/dev.env
-export
+
+# Force bash globally
+SHELL := /bin/bash
 
 # Environment
 DEV_ENV=./configs/dev.env
 PRO_ENV=./configs/pro.env
+TEST_ENV=./configs/test.env
 
 DEV_COMPOSE=docker compose --env-file $(DEV_ENV)
 PRO_COMPOSE=docker compose -f docker-compose.prod.yml --env-file $(PRO_ENV)
 
+# Macro
+define load_env
+	set -a && source $(1) && set +a
+endef
+
+
 # API Development
 build:
-	@echo "building cafenetchi-api server..."
-	@cd ./api && go build -o ./bin/cafenetchi-api ./cmd
+	@echo "Building cafenetchi-api..."
+	@$(call load_env, $(DEV_ENV)) && \
+	cd api && go build -o ./bin/cafenetchi-api ./cmd
 
 run: build
-	@echo "running cafenetchi-api server..."
-	@cd ./api && ./bin/cafenetchi-api
+	@echo "Running cafenetchi-api server..."
+	@$(call load_env, $(PRO_ENV)) && \
+	cd ./api && ./bin/cafenetchi-api
 
 dev: 
-	@echo "starting development environment..."
-	$(DEV_COMPOSE) up -d
-	@cd api && air -c .air.toml
+	@echo "Starting development environment..."
+	@$(DEV_COMPOSE) up -d
+	@$(call load_env, $(DEV_ENV)) && \
+	cd api && air -c .air.toml
 
 prod:
-	@echo "starting production environment..."
-	@$(PRO_COMPOSE) up -d -build
+	@echo "Starting production environment..."
+	@$(PRO_COMPOSE) up -d --build
 
 # Testing
 test:
-	@echo "testing.."
-	@cd ./api && go test ./... -v
+	@echo "Exporting test environment variables..."
+	@$(call load_env, $(TEST_ENV)) && \
+	cd api && go test ./... -v
 
 test-coverage:
 	@cd ./api && go test ./... -coverprofile=coverage.out
 	@cd ./api && go tool cover -html=coverage.out
+
+test-db-shell:
+	@echo "Connecting to database..."
+	@$(call load_env, $(TEST_ENV)) && \
+	psql "$$DB_URL"
 	
 # Database
 sqlc:
-	@echo "generating sqlc files..."
+	@echo "Generating sqlc files..."
 	@cd api && sqlc generate
 
 migrate-up:
-	@echo "migrating database up..."
-	@cd api && goose -dir internal/db/migrations postgres "$(DB_URL)" up
+	@echo "Migrating development database..."
+	@$(call load_env, $(DEV_ENV)) && \
+	cd api && goose -dir internal/db/migrations postgres "$$DB_URL" up
 
-migrate-check-status:
-	@echo "migrating check database status..."
-	@cd api && goose -dir internal/db/migrations postgres "$(DB_URL)" status
-
+migrate-status:
+	@echo "Development migration status..."
+	@$(call load_env, $(DEV_ENV)) && \
+	cd api && goose -dir internal/db/migrations postgres "$$DB_URL" status
 
 migrate-down:
-	@echo "migrating database down..."
-	@cd api && goose -dir internal/db/migrations postgres "$(DB_URL)" down
+	@echo "Rolling back development database..."
+	@$(call load_env, $(DEV_ENV)) && \
+	cd api && goose -dir internal/db/migrations postgres "$$DB_URL" down
 
 migrate-create:
-	@echo "creating new migration..."
+	@echo "Creating new migration..."
 	@cd api && goose -dir internal/db/migrations create $(name) sql
+
+migrate-test-up:
+	@echo "Migrating test database..."
+	@$(call load_env, $(TEST_ENV)) && \
+	cd api && goose -dir internal/db/migrations postgres "$$DB_URL" up
+
+migrate-test-down:
+	@echo "Rolling back test database..."
+	@$(call load_env, $(TEST_ENV)) && \
+	cd api && goose -dir internal/db/migrations postgres "$$DB_URL" down
+
+migrate-test-status:
+	@echo "Test migration status"
+	@$(call load_env, $(TEST_ENV)) && \
+	cd api && goose -dir internal/db/migrations postgres "$$DB_URL" status
 
 # Docker
 docker-up:
@@ -84,19 +118,19 @@ docker-prod-logs:
 # Utilities
 # ===============================================
 clean:
-	@echo "cleaning up..."
+	@echo "Cleaning up..."
 	@rm -rf ./api/bin
 	@rm -rf ./api/tmp
 
 lint:
-	@echo "linting..."
+	@echo "Linting..."
 	@cd api && golangci-lint run
 
 fmt:
-	@echo "formatting..."
+	@echo "Formatting..."
 	@cd api && go fmt ./...
 
 tidy:
-	@echo "tidying..."
+	@echo "Tidying modules..."
 	@cd api && go mod tidy
 
