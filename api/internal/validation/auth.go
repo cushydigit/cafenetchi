@@ -7,7 +7,7 @@ import (
 
 func ValidateSendOTP(req types.SendOTPRequest) (phone string, err error) {
 
-	phone, err = normalizeIranianPhone(phone)
+	phone, err = normalizeIranianPhone(req.Phone)
 	if err != nil {
 		return "", err
 	}
