@@ -58,11 +58,12 @@ func GenerateJWT(userID int64, phone, role, secretKey string, expiration time.Du
 //   - error: An error if the JWT parsing fails.
 func ParseJWT(tokenString, secretKey string) (*JWTClaims, error) {
 	claims := &JWTClaims{}
+
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		claims,
 		func(token *jwt.Token) (any, error) {
-			if token.Method != jwt.SigningMethodES256 {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("unexpected signing method")
 			}
 			return []byte(secretKey), nil
@@ -78,5 +79,4 @@ func ParseJWT(tokenString, secretKey string) (*JWTClaims, error) {
 	}
 
 	return claims, nil
-
 }
