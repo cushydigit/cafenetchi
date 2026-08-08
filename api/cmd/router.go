@@ -3,6 +3,7 @@ package main
 import (
 	"cafenetchi-api/internal/handler"
 	"cafenetchi-api/internal/limiter"
+	"cafenetchi-api/internal/logger"
 	"cafenetchi-api/internal/middleware"
 	"time"
 
@@ -23,14 +24,15 @@ func Routes(
 	user *handler.User,
 	rateLimiter limiter.Limiter,
 	jwtSecret string,
+	appLogger *logger.Logger,
 ) chi.Router {
 	// Initialize Router
 	r := chi.NewRouter()
 
 	// global middlewares
 	r.Use(
-		chi_middleware.RequestID,
-		chi_middleware.Logger,
+		middleware.RequestID,
+		middleware.RequestLogger(appLogger),
 		chi_middleware.Recoverer,
 		chi_middleware.Timeout(60*time.Second),
 		cors.Handler(cors.Options{
