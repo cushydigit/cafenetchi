@@ -80,7 +80,7 @@ func TestSendOTP_Success(t *testing.T) {
 		&fakeOTP{},
 		&fakeSMS{},
 		"secret",
-		logger.New(),
+		logger.NewDefault(),
 	)
 
 	err := s.SendOTP(context.Background(), PHONE)
@@ -93,7 +93,7 @@ func TestSendOTP_PhoneRequired(t *testing.T) {
 		&fakeOTP{},
 		&fakeSMS{},
 		"secret",
-		logger.New(),
+		logger.NewDefault(),
 	)
 
 	err := s.SendOTP(context.Background(), "")
@@ -108,7 +108,7 @@ func TestSendOTP_GeneratedErr(t *testing.T) {
 		},
 		&fakeSMS{},
 		"secret",
-		logger.New(),
+		logger.NewDefault(),
 	)
 
 	err := s.SendOTP(context.Background(), PHONE)
@@ -125,7 +125,7 @@ func TestSendOTP_SMSFailure(t *testing.T) {
 			sendErr: sms.ErrSend,
 		},
 		"secret",
-		logger.New(),
+		logger.NewDefault(),
 	)
 
 	err := s.SendOTP(context.Background(), PHONE)
@@ -146,7 +146,7 @@ func TestValidateOTP_ExistingUser(t *testing.T) {
 		&fakeOTP{},
 		&fakeSMS{},
 		"secret",
-		logger.New(),
+		logger.NewDefault(),
 	)
 
 	result, err := s.ValidateOTP(context.Background(), user.Phone, "123456")
@@ -171,7 +171,7 @@ func TestValidateOTP_NewUser(t *testing.T) {
 		&fakeOTP{},
 		&fakeSMS{},
 		"secret",
-		logger.New(),
+		logger.NewDefault(),
 	)
 
 	result, err := s.ValidateOTP(context.Background(), PHONE, CODE)
@@ -189,7 +189,7 @@ func TestValidateOTP_InvalidOTP(t *testing.T) {
 		},
 		&fakeSMS{},
 		"secret",
-		logger.New(),
+		logger.NewDefault(),
 	)
 
 	_, err := s.ValidateOTP(context.Background(), PHONE, CODE)

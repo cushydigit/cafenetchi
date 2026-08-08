@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	"cafenetchi-api/internal/contextx"
 	"cafenetchi-api/internal/utils"
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -28,7 +28,8 @@ func TestAuth_ValidToken(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 
-		id := UserID(r.Context())
+		id := contextx.UserID(r.Context())
+
 		if id != 123 {
 			t.Errorf("expected id %d, got %d", 123, id)
 		}
@@ -101,23 +102,5 @@ func TestAuth_InvalidToken(t *testing.T) {
 
 	if rr.Code != http.StatusUnauthorized {
 		t.Errorf("expected status code %d, got %d", http.StatusUnauthorized, rr.Code)
-	}
-}
-
-func TestUserID(t *testing.T) {
-	ctx := context.WithValue(context.Background(), UserIDKey, int64(123))
-
-	id := UserID(ctx)
-
-	if id != 123 {
-		t.Errorf("expected id %d, got %d", 123, id)
-	}
-}
-
-func TestUserID_NotFound(t *testing.T) {
-	id := UserID(context.Background())
-
-	if id != 0 {
-		t.Errorf("expected id %d, got %d", 0, id)
 	}
 }

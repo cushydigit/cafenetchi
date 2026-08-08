@@ -1,9 +1,9 @@
 package handler
 
 import (
+	"cafenetchi-api/internal/contextx"
 	"cafenetchi-api/internal/helpers"
 	"cafenetchi-api/internal/logger"
-	"cafenetchi-api/internal/middleware"
 	"cafenetchi-api/internal/model"
 	"cafenetchi-api/internal/repository"
 	"cafenetchi-api/internal/service"
@@ -25,7 +25,7 @@ func NewUser(s service.User, l *logger.Logger) *User {
 }
 
 func (h *User) Me(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.UserID(r.Context())
+	userID := contextx.UserID(r.Context())
 	u, err := h.svc.GetByID(r.Context(), userID)
 	switch {
 	case errors.Is(err, repository.ErrUserNotFound):
@@ -45,7 +45,8 @@ func (h *User) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := middleware.UserID(r.Context())
+	userID := contextx.UserID(r.Context())
+
 	_, err := h.svc.UpdateProfile(r.Context(), userID, model.UpdateUser{
 		FullName:  req.FullName,
 		AvatarURL: req.Avatar,

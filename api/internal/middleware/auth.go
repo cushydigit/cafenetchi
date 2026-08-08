@@ -1,18 +1,12 @@
 package middleware
 
 import (
+	"cafenetchi-api/internal/contextx"
 	"cafenetchi-api/internal/helpers"
 	"cafenetchi-api/internal/types"
 	"cafenetchi-api/internal/utils"
-	"context"
 	"net/http"
 	"strings"
-)
-
-type ContextKey string
-
-const (
-	UserIDKey ContextKey = "user_id"
 )
 
 func Auth(secret string) func(next http.Handler) http.Handler {
@@ -31,20 +25,9 @@ func Auth(secret string) func(next http.Handler) http.Handler {
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
+			ctx := contextx.WithUserID(r.Context(), claims.UserID)
 
-			next.ServeHTTP(
-				w,
-				r.WithContext(ctx),
-			)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-}
-
-func UserID(ctx context.Context) int64 {
-	id, ok := ctx.Value(UserIDKey).(int64)
-	if !ok {
-		return 0
-	}
-	return id
 }

@@ -46,6 +46,7 @@ func NewAuth(ur repository.User, o otp.Service, s sms.Service, jwtSecret string,
 }
 
 func (s *auth) SendOTP(ctx context.Context, phone string) error {
+	log := s.logger.WithContext(ctx)
 	// TODO: Business rule: Maybe check rate limiting here later
 
 	// the validation check on the handler but the auth service
@@ -55,7 +56,7 @@ func (s *auth) SendOTP(ctx context.Context, phone string) error {
 	}
 	code, err := s.otpSvc.Generate(ctx, phone)
 	if err != nil {
-		s.logger.Error(
+		log.Error(
 			"failed to generate otp",
 			"phone", phone,
 			"error", err,
@@ -64,7 +65,7 @@ func (s *auth) SendOTP(ctx context.Context, phone string) error {
 	}
 
 	if err := s.smsSvc.Send(phone, code); err != nil {
-		s.logger.Error(
+		log.Error(
 			"failed to send otp",
 			"phone", phone,
 			"error", err,
@@ -77,6 +78,7 @@ func (s *auth) SendOTP(ctx context.Context, phone string) error {
 }
 
 func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*AuthResult, error) {
+	log := s.logger.WithContext(ctx)
 	// verify OTP
 	if err := s.otpSvc.Validate(ctx, phone, code); err != nil {
 		switch {
@@ -85,7 +87,7 @@ func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*AuthResult
 		case errors.Is(err, otp.ErrNotFound):
 			return nil, types.ErrInvalidOTP
 		default:
-			s.logger.Error(
+			log.Error(
 				"otp validation failed",
 				"phone", phone,
 				"error", err,
@@ -108,7 +110,7 @@ func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*AuthResult
 
 		user, err = s.userRepo.Create(ctx, phone)
 		if err != nil {
-			s.logger.Error(
+			log.Error(
 				"failed to create user",
 				"phone",
 				phone,
@@ -121,13 +123,13 @@ func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*AuthResult
 
 		isNewUser = true
 
-		s.logger.Info(
+		log.Info(
 			"user registered",
 			"user_id", user.ID,
 		)
 
 	} else {
-		s.logger.Error(
+		log.Error(
 			"failed to get user",
 			"phone", phone,
 			"error", err,
@@ -144,7 +146,7 @@ func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*AuthResult
 		time.Hour*24,
 	)
 	if err != nil {
-		s.logger.Error(
+		log.Error(
 			"failed to generate jwt",
 			"user_id", user.ID,
 			"error", err,
@@ -152,7 +154,7 @@ func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*AuthResult
 		return nil, types.ErrInternalServer
 	}
 
-	s.logger.Info(
+	log.Info(
 		"user authenticated",
 		"user_id", user.ID,
 		"is_new", isNewUser,
@@ -160,7 +162,7 @@ func (s *auth) ValidateOTP(ctx context.Context, phone, code string) (*AuthResult
 
 	// consume or delete OTP
 	if err := s.otpSvc.Consume(ctx, phone); err != nil {
-		s.logger.Error(
+		log.Error(
 			"otp error delete",
 			"phone", phone,
 			"error", err,
