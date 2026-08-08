@@ -9,6 +9,14 @@ type Logger struct {
 	*slog.Logger
 }
 
-func New() *Logger {
-	return &Logger{slog.New(slog.NewJSONHandler(os.Stdout, nil))}
+func New(handler slog.Handler) *Logger {
+	return &Logger{
+		Logger: slog.New(handler),
+	}
+}
+
+func NewDefault() *Logger {
+	return New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelWarn,
+	}))
 }
