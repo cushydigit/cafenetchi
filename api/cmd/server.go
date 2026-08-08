@@ -11,6 +11,8 @@ import (
 	"cafenetchi-api/internal/service"
 	"cafenetchi-api/internal/sms"
 	"context"
+	"errors"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -28,7 +30,11 @@ func main() {
 	defer stop()
 
 	// create logger
-	appLogger := logger.New()
+	appLogger := logger.New(
+		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		}),
+	)
 
 	// load configuration
 	cfg := config.Load(appLogger)
@@ -109,6 +115,7 @@ func main() {
 		userHandler,
 		limitStore,
 		cfg.JWTSecret,
+		appLogger,
 	)
 
 	// server
@@ -130,7 +137,10 @@ func main() {
 			"port",
 			cfg.Port,
 		)
-		serverErr <- srv.ListenAndServe()
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErr <- err
+		}
+		close(serverErr)
 	}()
 
 	select {
